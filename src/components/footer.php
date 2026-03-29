@@ -20,7 +20,7 @@
     <?php endif; ?>
 
     <!-- Bootstrap 5 JS -->
-    <script src="<?= APP_URL ?>/src/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= APP_URL ?>/public/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom JS -->
     <script src="<?= APP_URL ?>/src/Js/app.js"></script>
