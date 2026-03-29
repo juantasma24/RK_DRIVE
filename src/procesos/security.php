@@ -430,7 +430,7 @@ function isIPBlocked($ip) {
 
     $result = $db->fetchOne($sql, [
         'ip' => $ip,
-        'lockout' => floor(LOCKOUT_TIME / 60)
+        'lockout' => floor(LOGIN_LOCKOUT_TIME / 60)
     ]);
 
     $attempts = (int)($result['attempts'] ?? 0);
@@ -439,7 +439,7 @@ function isIPBlocked($ip) {
         return [
             'blocked' => true,
             'attempts' => $attempts,
-            'remaining_time' => LOCKOUT_TIME
+            'remaining_time' => LOGIN_LOCKOUT_TIME
         ];
     }
 
