@@ -1,0 +1,137 @@
+# =============================================================================
+# RK Marketing Drive - Configuracion de Apache
+# =============================================================================
+
+# Habilitar el motor de reescritura
+RewriteEngine On
+
+# Establecer el directorio base (ajustar segun la instalacion)
+# RewriteBase /RKMarketingDrive/
+
+# Forzar HTTPS (descomentar en produccion)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Forzar www (descomentar en produccion si aplica)
+# RewriteCond %{HTTP_HOST} !^www\. [NC]
+# RewriteRule ^(.*)$ https://www.%{HTTP_HOST}/$1 [R=301,L]
+
+# =============================================================================
+# REGLAS DE REESCRITURA
+# =============================================================================
+
+# Redirigir todas las peticiones a index.php excepto archivos existentes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# =============================================================================
+# SEGURIDAD
+# =============================================================================
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Deshabilitar acceso a archivos ocultos
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Deshabilitar acceso a archivos de configuracion
+<FilesMatch "\.(json|md|yml|yaml|lock|dist)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger archivos PHP en uploads
+<FilesMatch "^uploads/.*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger archivos PHP en trash
+<FilesMatch "^trash/.*\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# =============================================================================
+# HEADERS DE SEGURIDAD
+# =============================================================================
+
+<IfModule mod_headers.c>
+    # Prevenir clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevenir MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Content Security Policy (ajustar segun necesidades)
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+
+    # HSTS (descomentar en produccion con HTTPS)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# =============================================================================
+# COMPRESION
+# =============================================================================
+
+<IfModule mod_deflate.c>
+    # Comprimir tipos de contenido textuales
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml
+
+    # No comprimir archivos ya comprimidos
+    SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|zip|rar|7z|gz|pdf)$ no-gzip
+</IfModule>
+
+# =============================================================================
+# CACHING
+# =============================================================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # Imagenes
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+
+    # CSS y JavaScript
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+
+    # Fuentes
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+
+    # PDF
+    ExpiresByType application/pdf "access plus 1 month"
+
+    # HTML (no cachear para contenido dinamico)
+    ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
+
+# =============================================================================
+# MANEJO DE ERRORES
+# =============================================================================
+
+ErrorDocument 400 /index.php?page=error&code=400
+ErrorDocument 401 /index.php?page=error&code=401
+ErrorDocument 403 /index.php?page=error&code=403
+ErrorDocument 404 /index.php?page=error&code=404
+ErrorDocument 500 /index.php?page=error&code=500

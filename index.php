@@ -1,0 +1,289 @@
+<?php
+/**
+ * RK Marketing Drive - Punto de Entrada
+ *
+ * Este archivo es el punto de entrada principal de la aplicacion.
+ * Carga la configuracion, inicializa la sesion y maneja el routing basico.
+ *
+ * @package RKMarketingDrive
+ * @version 1.0.0
+ */
+
+//=============================================================================
+// CONFIGURACION INICIAL
+//=============================================================================
+
+// Definir constante para verificar que la aplicacion se inicia correctamente
+define('APP_STARTED', true);
+
+// Mostrar errores en desarrollo
+if (file_exists(__DIR__ . '/config/config.php')) {
+    require_once __DIR__ . '/config/config.php';
+}
+
+// Establecer headers de seguridad
+setSecurityHeaders();
+
+// Iniciar sesion segura
+startSecureSession();
+
+//=============================================================================
+// AUTOLOAD DE CLASES
+//=============================================================================
+
+spl_autoload_register(function ($className) {
+    $directories = [
+        __DIR__ . '/src/Entity/',
+        __DIR__ . '/src/controllers/',
+    ];
+
+    foreach ($directories as $directory) {
+        $file = $directory . $className . '.php';
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
+
+//=============================================================================
+// CARGAR ARCHIVOS NECESARIOS
+//=============================================================================
+
+// Funciones auxiliares
+require_once __DIR__ . '/src/procesos/functions.php';
+
+// Funciones de seguridad
+require_once __DIR__ . '/src/procesos/security.php';
+
+// Funciones de autenticacion
+require_once __DIR__ . '/src/procesos/auth.php';
+
+// Configuracion de base de datos
+require_once __DIR__ . '/config/database.php';
+
+// Configuracion de email
+require_once __DIR__ . '/config/mail.php';
+
+//=============================================================================
+// CONEXION A BASE DE DATOS
+//=============================================================================
+
+try {
+    $database = db();
+} catch (Exception $e) {
+    logMessage('error', 'Error de conexion a base de datos', ['error' => $e->getMessage()]);
+    die('Error de conexion. Por favor, intente mas tarde.');
+}
+
+//=============================================================================
+// ROUTING BASICO
+//=============================================================================
+
+// Obtener la pagina solicitada
+$page = $_GET['page'] ?? 'login';
+$action = $_GET['action'] ?? 'index';
+$id = $_GET['id'] ?? null;
+
+// Sanitizar inputs
+$page = sanitizeString($page);
+$action = sanitizeString($action);
+if ($id !== null) {
+    $id = sanitizeInt($id);
+}
+
+// Rutas permitidas
+$publicRoutes = ['login', 'register', 'forgot-password', 'reset-password', 'logout'];
+$clientRoutes = ['dashboard', 'folders', 'files', 'trash', 'profile', 'notifications'];
+$adminRoutes = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings'];
+
+//=============================================================================
+// VERIFICAR AUTENTICACION
+//=============================================================================
+
+$isLoggedIn = isAuthenticated();
+$userRole = $_SESSION['user_role'] ?? null;
+
+// Si no esta autenticado y trata de acceder a una ruta protegida
+if (!$isLoggedIn && !in_array($page, $publicRoutes)) {
+    redirect('/login');
+}
+
+// Si esta autenticado y trata de acceder a login/register
+if ($isLoggedIn && in_array($page, ['login', 'register'])) {
+    redirect('/dashboard');
+}
+
+// Verificar permisos de administrador
+if (in_array($page, $adminRoutes) && $userRole !== 'admin') {
+    setFlash('error', 'No tienes permisos para acceder a esta pagina.');
+    redirect('/dashboard');
+}
+
+//=============================================================================
+// INCLUIR CONTROLADOR Y VISTA
+//=============================================================================
+
+// Variable para almacenar datos para la vista
+$viewData = [];
+
+// Determinar que controlador cargar
+switch ($page) {
+    // Rutas publicas
+    case 'login':
+        $pageTitle = 'Iniciar Sesion';
+        include __DIR__ . '/src/controllers/AuthController.php';
+        $controller = new AuthController();
+        $viewData = $controller->login();
+        break;
+
+    case 'register':
+        $pageTitle = 'Registro';
+        include __DIR__ . '/src/controllers/AuthController.php';
+        $controller = new AuthController();
+        $viewData = $controller->register();
+        break;
+
+    case 'forgot-password':
+        $pageTitle = 'Recuperar Contrasena';
+        include __DIR__ . '/src/controllers/AuthController.php';
+        $controller = new AuthController();
+        $viewData = $controller->forgotPassword();
+        break;
+
+    case 'reset-password':
+        $pageTitle = 'Restablecer Contrasena';
+        include __DIR__ . '/src/controllers/AuthController.php';
+        $controller = new AuthController();
+        $viewData = $controller->resetPassword();
+        break;
+
+    case 'logout':
+        include __DIR__ . '/src/controllers/AuthController.php';
+        $controller = new AuthController();
+        $controller->logout();
+        break;
+
+    // Rutas de cliente
+    case 'dashboard':
+        $pageTitle = 'Panel Principal';
+        include __DIR__ . '/src/controllers/DashboardController.php';
+        $controller = new DashboardController();
+        $viewData = $controller->index();
+        break;
+
+    case 'folders':
+        $pageTitle = 'Mis Carpetas';
+        include __DIR__ . '/src/controllers/CarpetaController.php';
+        $controller = new CarpetaController();
+        $viewData = $controller->handleRequest($action, $id);
+        break;
+
+    case 'files':
+        $pageTitle = 'Archivos';
+        include __DIR__ . '/src/controllers/ArchivoController.php';
+        $controller = new ArchivoController();
+        $viewData = $controller->handleRequest($action, $id);
+        break;
+
+    case 'trash':
+        $pageTitle = 'Papelera';
+        include __DIR__ . '/src/controllers/ArchivoController.php';
+        $controller = new ArchivoController();
+        $viewData = $controller->trash();
+        break;
+
+    case 'profile':
+        $pageTitle = 'Mi Perfil';
+        include __DIR__ . '/src/controllers/UsuarioController.php';
+        $controller = new UsuarioController();
+        $viewData = $controller->profile();
+        break;
+
+    case 'notifications':
+        $pageTitle = 'Notificaciones';
+        include __DIR__ . '/src/controllers/NotificacionController.php';
+        $controller = new NotificacionController();
+        $viewData = $controller->index();
+        break;
+
+    // Rutas de administrador
+    case 'admin':
+    case 'admin/users':
+        $pageTitle = 'Gestion de Usuarios';
+        include __DIR__ . '/src/controllers/AdminController.php';
+        $controller = new AdminController();
+        $viewData = $controller->users($action, $id);
+        break;
+
+    case 'admin/files':
+        $pageTitle = 'Gestion de Archivos';
+        include __DIR__ . '/src/controllers/AdminController.php';
+        $controller = new AdminController();
+        $viewData = $controller->files($action, $id);
+        break;
+
+    case 'admin/logs':
+        $pageTitle = 'Logs de Actividad';
+        include __DIR__ . '/src/controllers/AdminController.php';
+        $controller = new AdminController();
+        $viewData = $controller->logs();
+        break;
+
+    case 'admin/settings':
+        $pageTitle = 'Configuracion';
+        include __DIR__ . '/src/controllers/AdminController.php';
+        $controller = new AdminController();
+        $viewData = $controller->settings();
+        break;
+
+    // Ruta por defecto
+    default:
+        $pageTitle = 'Pagina no encontrada';
+        http_response_code(404);
+        $viewData = [
+            'view' => 'errors/404',
+            'title' => 'Pagina no encontrada'
+        ];
+}
+
+//=============================================================================
+// RENDERIZAR VISTA
+//=============================================================================
+
+// Extraer datos para la vista
+extract($viewData);
+
+// Determinar que vista cargar
+if (isset($viewData['view'])) {
+    $viewFile = __DIR__ . '/public/' . $viewData['view'] . '.php';
+} else {
+    $viewFile = __DIR__ . '/public/' . $page . '/' . $action . '.php';
+}
+
+// Verificar si existe la vista
+if (file_exists($viewFile)) {
+    // Incluir layout si es necesario
+    if (!isset($viewData['skip_layout'])) {
+        include __DIR__ . '/src/components/header.php';
+    }
+
+    include $viewFile;
+
+    if (!isset($viewData['skip_layout'])) {
+        include __DIR__ . '/src/components/footer.php';
+    }
+} else {
+    // Vista no encontrada
+    http_response_code(404);
+    include __DIR__ . '/public/errors/404.php';
+}
+
+//=============================================================================
+// CERRAR CONEXION
+//=============================================================================
+
+// Limpiar recursos
+if (isset($database)) {
+    $database = null;
+}
