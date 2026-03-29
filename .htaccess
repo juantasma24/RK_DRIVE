@@ -115,8 +115,8 @@ Options -Indexes
     ExpiresByType image/svg+xml "access plus 1 month"
 
     # CSS y JavaScript
-    ExpiresByType text/css "access plus 1 week"
-    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
 
     # Fuentes
     ExpiresByType font/woff "access plus 1 year"

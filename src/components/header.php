@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="<?= APP_URL ?>/public/vendor/bootstrap-icons/css/bootstrap-icons.min.css">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css?v=<?= APP_VERSION ?>">
 
     <!-- CSRF Token para AJAX -->
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">

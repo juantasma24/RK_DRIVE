@@ -13,6 +13,9 @@
 // CONFIGURACION INICIAL
 //=============================================================================
 
+// Activar output buffering para evitar "headers already sent"
+ob_start();
+
 // Definir constante para verificar que la aplicacion se inicia correctamente
 define('APP_STARTED', true);
 
