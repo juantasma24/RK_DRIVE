@@ -9,7 +9,7 @@
     <title><?= $pageTitle ?? 'RK Marketing Drive' ?></title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="<?= APP_URL ?>/src/img/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="<?= APP_URL ?>/public/img/favicon.ico">
 
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/vendor/bootstrap/css/bootstrap.min.css">
@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="<?= APP_URL ?>/public/vendor/bootstrap-icons/css/bootstrap-icons.min.css">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= APP_URL ?>/src/Css/style.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css">
 
     <!-- CSRF Token para AJAX -->
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
