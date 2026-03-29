@@ -5,8 +5,8 @@
 # Habilitar el motor de reescritura
 RewriteEngine On
 
-# Establecer el directorio base (ajustar segun la instalacion)
-# RewriteBase /RKMarketingDrive/
+# Directorio base para instalacion en subdirectorio (XAMPP local)
+RewriteBase /RK_DRIVE/
 
 # Forzar HTTPS (descomentar en produccion)
 # RewriteCond %{HTTPS} off
@@ -20,9 +20,11 @@ RewriteEngine On
 # REGLAS DE REESCRITURA
 # =============================================================================
 
-# Redirigir todas las peticiones a index.php excepto archivos existentes
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# Servir archivos fisicos directamente (CSS, JS, imagenes, fuentes)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Todo lo demas va a index.php (incluso si es un directorio fisico como /trash)
 RewriteRule ^(.*)$ index.php [QSA,L]
 
 # =============================================================================
