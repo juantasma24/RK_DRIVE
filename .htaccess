@@ -24,8 +24,11 @@ RewriteBase /RK_DRIVE/
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Todo lo demas va a index.php (incluso si es un directorio fisico como /trash)
-RewriteRule ^(.*)$ index.php [QSA,L]
+# Raiz: index.php sin parametros
+RewriteRule ^$ index.php [L]
+
+# Ruta con segmentos (ej: folders, admin/users): pasar como ?page=
+RewriteRule ^(.+)$ index.php?page=$1 [QSA,L]
 
 # =============================================================================
 # SEGURIDAD
