@@ -123,6 +123,7 @@ INSERT INTO administradores_email (nombre, email, recibe_alertas, recibe_resumen
 -- =============================================================================
 
 -- Calcular el almacenamiento usado por cada usuario basandose en sus archivos
+SET SQL_SAFE_UPDATES = 0;
 UPDATE usuarios u
 JOIN (
     SELECT c.usuario_id, COALESCE(SUM(a.tamano_bytes), 0) AS total
@@ -132,6 +133,7 @@ JOIN (
     GROUP BY c.usuario_id
 ) AS stats ON u.id = stats.usuario_id
 SET u.almacenamiento_usado = stats.total;
+SET SQL_SAFE_UPDATES = 1;
 
 -- =============================================================================
 -- FIN DEL SEED
