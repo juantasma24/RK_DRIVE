@@ -16,10 +16,29 @@
 // Definir constante para verificar que la aplicacion se inicia correctamente
 define('APP_STARTED', true);
 
-// Mostrar errores en desarrollo
+//=============================================================================
+// CARGAR ARCHIVOS NECESARIOS (antes de usar cualquier funcion)
+//=============================================================================
+
+// Configuracion global
 if (file_exists(__DIR__ . '/config/config.php')) {
     require_once __DIR__ . '/config/config.php';
 }
+
+// Funciones auxiliares
+require_once __DIR__ . '/src/procesos/functions.php';
+
+// Funciones de seguridad
+require_once __DIR__ . '/src/procesos/security.php';
+
+// Funciones de autenticacion
+require_once __DIR__ . '/src/procesos/auth.php';
+
+// Configuracion de base de datos
+require_once __DIR__ . '/config/database.php';
+
+// Configuracion de email
+require_once __DIR__ . '/config/mail.php';
 
 // Establecer headers de seguridad
 setSecurityHeaders();
@@ -45,25 +64,6 @@ spl_autoload_register(function ($className) {
         }
     }
 });
-
-//=============================================================================
-// CARGAR ARCHIVOS NECESARIOS
-//=============================================================================
-
-// Funciones auxiliares
-require_once __DIR__ . '/src/procesos/functions.php';
-
-// Funciones de seguridad
-require_once __DIR__ . '/src/procesos/security.php';
-
-// Funciones de autenticacion
-require_once __DIR__ . '/src/procesos/auth.php';
-
-// Configuracion de base de datos
-require_once __DIR__ . '/config/database.php';
-
-// Configuracion de email
-require_once __DIR__ . '/config/mail.php';
 
 //=============================================================================
 // CONEXION A BASE DE DATOS

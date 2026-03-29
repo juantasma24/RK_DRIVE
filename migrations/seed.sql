@@ -124,12 +124,14 @@ INSERT INTO administradores_email (nombre, email, recibe_alertas, recibe_resumen
 
 -- Calcular el almacenamiento usado por cada usuario basandose en sus archivos
 UPDATE usuarios u
-SET almacenamiento_usado = (
-    SELECT COALESCE(SUM(a.tamano_bytes), 0)
+JOIN (
+    SELECT c.usuario_id, COALESCE(SUM(a.tamano_bytes), 0) AS total
     FROM archivos a
     INNER JOIN carpetas c ON a.carpeta_id = c.id
-    WHERE c.usuario_id = u.id AND a.en_papelera = 0
-);
+    WHERE a.en_papelera = 0
+    GROUP BY c.usuario_id
+) AS stats ON u.id = stats.usuario_id
+SET u.almacenamiento_usado = stats.total;
 
 -- =============================================================================
 -- FIN DEL SEED
