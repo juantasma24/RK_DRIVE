@@ -5,6 +5,14 @@
  * @version 1.0.0
  */
 
+/* Bootstrap Icons - corregir ruta de fuentes */
+@font-face {
+    font-display: block;
+    font-family: "bootstrap-icons";
+    src: url("../vendor/bootstrap-icons/fonts/bootstrap-icons.woff2") format("woff2"),
+         url("../vendor/bootstrap-icons/fonts/bootstrap-icons.woff") format("woff");
+}
+
 /* =============================================================================
    VARIABLES CSS
    ============================================================================= */

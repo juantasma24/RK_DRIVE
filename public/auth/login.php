@@ -83,8 +83,8 @@
                     <div class="card-body text-center">
                         <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>Credenciales de Demo</h5>
                         <p class="card-text small mb-0">
-                            <strong>Admin:</strong> admin@rksolutions.com / Admin123!<br>
-                            <strong>Cliente:</strong> cliente1@empresaabc.com / Cliente123!
+                            <strong>Admin:</strong> admin@rksolutions.com / password<br>
+                            <strong>Cliente:</strong> cliente1@empresaabc.com / password
                         </p>
                     </div>
                 </div>
