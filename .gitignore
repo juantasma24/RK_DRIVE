@@ -7,8 +7,7 @@
 # Uploads de usuarios
 uploads/
 
-# Configuracion local sensible
-config/config.php
+# Configuracion local sensible (credenciales)
 config/database.php
 config/mail.php
 
@@ -24,3 +23,7 @@ Thumbs.db
 
 # PHP
 *.swp
+
+# Composer
+vendor/
+composer.lock

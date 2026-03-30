@@ -5,8 +5,8 @@
 # Habilitar el motor de reescritura
 RewriteEngine On
 
-# Establecer el directorio base (ajustar segun la instalacion)
-# RewriteBase /RKMarketingDrive/
+# Directorio base para instalacion en subdirectorio (XAMPP local)
+RewriteBase /RK_DRIVE/
 
 # Forzar HTTPS (descomentar en produccion)
 # RewriteCond %{HTTPS} off
@@ -20,10 +20,15 @@ RewriteEngine On
 # REGLAS DE REESCRITURA
 # =============================================================================
 
-# Redirigir todas las peticiones a index.php excepto archivos existentes
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
+# Servir archivos fisicos directamente (CSS, JS, imagenes, fuentes)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Raiz: index.php sin parametros
+RewriteRule ^$ index.php [L]
+
+# Ruta con segmentos (ej: folders, admin/users): pasar como ?page=
+RewriteRule ^(.+)$ index.php?page=$1 [QSA,L]
 
 # =============================================================================
 # SEGURIDAD
@@ -110,8 +115,8 @@ Options -Indexes
     ExpiresByType image/svg+xml "access plus 1 month"
 
     # CSS y JavaScript
-    ExpiresByType text/css "access plus 1 week"
-    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
 
     # Fuentes
     ExpiresByType font/woff "access plus 1 year"
@@ -130,8 +135,8 @@ Options -Indexes
 # MANEJO DE ERRORES
 # =============================================================================
 
-ErrorDocument 400 /index.php?page=error&code=400
-ErrorDocument 401 /index.php?page=error&code=401
-ErrorDocument 403 /index.php?page=error&code=403
-ErrorDocument 404 /index.php?page=error&code=404
-ErrorDocument 500 /index.php?page=error&code=500
+ErrorDocument 400 /RK_DRIVE/index.php?page=error&code=400
+ErrorDocument 401 /RK_DRIVE/index.php?page=error&code=401
+ErrorDocument 403 /RK_DRIVE/index.php?page=error&code=403
+ErrorDocument 404 /RK_DRIVE/index.php?page=error&code=404
+ErrorDocument 500 /RK_DRIVE/index.php?page=error&code=500

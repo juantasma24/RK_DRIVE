@@ -48,8 +48,8 @@ function formatDate($datetime, $format = 'd/m/Y H:i') {
         return '-';
     }
 
-    $date = new DateTime($datetime);
-    return $date->format($format);
+    $ts = strtotime($datetime);
+    return $ts !== false ? date($format, $ts) : '-';
 }
 
 /**
@@ -362,7 +362,10 @@ function startSecureSession() {
             }
         }
 
-        $_SESSION['last_activity'] = time();
+        // Actualizar last_activity solo cada 5 minutos para evitar escritura en cada request
+        if (!isset($_SESSION['last_activity']) || time() - $_SESSION['last_activity'] > 300) {
+            $_SESSION['last_activity'] = time();
+        }
     }
 }
 
