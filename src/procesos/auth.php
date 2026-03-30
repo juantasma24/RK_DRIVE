@@ -342,9 +342,9 @@ function getUserActivityLog($userId, $limit = 50) {
     $sql = "SELECT * FROM logs_actividad
             WHERE usuario_id = :user_id
             ORDER BY fecha DESC
-            LIMIT :limit";
+            LIMIT " . (int)$limit;
 
-    return em()->getConnection()->executeQuery($sql, ['user_id' => $userId, 'limit' => $limit])
+    return em()->getConnection()->executeQuery($sql, ['user_id' => $userId])
                ->fetchAllAssociative();
 }
 

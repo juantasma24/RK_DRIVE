@@ -79,8 +79,8 @@ class ArchivoRepository
                 INNER JOIN carpetas c ON a.carpeta_id = c.id
                 WHERE a.usuario_id = :uid AND a.en_papelera = 0
                 ORDER BY a.fecha_subida DESC
-                LIMIT :limit";
+                LIMIT " . (int)$limit;
 
-        return $this->em->getConnection()->executeQuery($sql, ['uid' => $usuarioId, 'limit' => $limit])->fetchAllAssociative();
+        return $this->em->getConnection()->executeQuery($sql, ['uid' => $usuarioId])->fetchAllAssociative();
     }
 }
