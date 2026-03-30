@@ -1,0 +1,20 @@
+{
+    "name": "rk/marketing-drive",
+    "description": "RK Marketing Drive - Plataforma de gestion de archivos",
+    "type": "project",
+    "authors": [
+        {
+            "name": "juantasma24",
+            "email": "194494645+juantasma24@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "doctrine/orm": "^3.6",
+        "symfony/cache": "^7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}

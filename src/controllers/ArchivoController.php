@@ -2,8 +2,6 @@
 /**
  * Controlador de Archivos
  *
- * Gestiona subida, descarga, papelera y eliminación de archivos.
- *
  * @package RKMarketingDrive
  */
 
@@ -13,10 +11,7 @@ if (!defined('APP_STARTED')) {
 
 class ArchivoController {
 
-    private $db;
-
     public function __construct() {
-        $this->db = db();
         requireAuth();
     }
 
@@ -32,24 +27,25 @@ class ArchivoController {
     }
 
     // =========================================================================
-    // LISTADO DE TODOS LOS ARCHIVOS
+    // LISTADO
     // =========================================================================
 
     public function index() {
-        $userId   = getCurrentUserId();
-        $archivos = $this->db->fetchAll(
+        $userId = getCurrentUserId();
+
+        $archivos = em()->getConnection()->executeQuery(
             "SELECT a.*, c.nombre AS carpeta_nombre
              FROM archivos a
              INNER JOIN carpetas c ON a.carpeta_id = c.id
              WHERE a.usuario_id = :uid AND a.en_papelera = 0
              ORDER BY a.fecha_subida DESC",
             ['uid' => $userId]
-        );
+        )->fetchAllAssociative();
 
-        $carpetas = $this->db->fetchAll(
+        $carpetas = em()->getConnection()->executeQuery(
             "SELECT id, nombre FROM carpetas WHERE usuario_id = :uid AND activa = 1 ORDER BY nombre",
             ['uid' => $userId]
-        );
+        )->fetchAllAssociative();
 
         return [
             'view'     => 'files/index',
@@ -79,12 +75,8 @@ class ArchivoController {
         }
 
         // Verificar que la carpeta pertenece al usuario
-        $carpeta = $this->db->fetchOne(
-            "SELECT id, nombre FROM carpetas WHERE id = :id AND usuario_id = :uid AND activa = 1 LIMIT 1",
-            ['id' => $carpetaId, 'uid' => $userId]
-        );
-
-        if (!$carpeta) {
+        $carpeta = em()->find(\App\Entity\Carpeta::class, $carpetaId);
+        if (!$carpeta || !$carpeta->isActiva() || $carpeta->getUsuario()->getId() !== $userId) {
             setFlash('error', 'Carpeta no encontrada.');
             redirect('/?page=folders');
         }
@@ -96,7 +88,6 @@ class ArchivoController {
 
         $file = $_FILES['archivo'];
 
-        // Validar archivo
         $validation = validateUploadedFile($file);
         if (!$validation['valid']) {
             setFlash('error', implode(' ', $validation['errors']));
@@ -104,20 +95,16 @@ class ArchivoController {
         }
 
         // Verificar espacio disponible
-        $storageRow = $this->db->fetchOne(
-            "SELECT almacenamiento_usado, almacenamiento_maximo FROM usuarios WHERE id = :id LIMIT 1",
-            ['id' => $userId]
-        );
-        if (((int)$storageRow['almacenamiento_usado'] + $file['size']) > (int)$storageRow['almacenamiento_maximo']) {
+        $usuario = em()->find(\App\Entity\Usuario::class, $userId);
+        if (((int)$usuario->getAlmacenamientoUsado() + $file['size']) > (int)$usuario->getAlmacenamientoMaximo()) {
             setFlash('error', 'No tienes suficiente espacio de almacenamiento.');
             redirect("/?page=folders&action=show&id={$carpetaId}");
         }
 
-        // Generar ruta física segura
-        $extension    = $validation['extension'];
+        $extension      = $validation['extension'];
         $nombreOriginal = sanitizeFilename($file['name']);
-        $nombreFisico = bin2hex(random_bytes(16)) . '.' . $extension;
-        $rutaFisica   = generateSecurePath($userId, $nombreFisico);
+        $nombreFisico   = bin2hex(random_bytes(16)) . '.' . $extension;
+        $rutaFisica     = generateSecurePath($userId, $nombreFisico);
 
         if (!move_uploaded_file($file['tmp_name'], $rutaFisica)) {
             setFlash('error', 'Error al mover el archivo al servidor.');
@@ -125,27 +112,23 @@ class ArchivoController {
         }
 
         try {
-            $archivoId = $this->db->insert(
-                "INSERT INTO archivos
-                 (carpeta_id, usuario_id, nombre_original, nombre_fisico, tipo_mime,
-                  extension, tamano_bytes, ruta_fisica, descripcion)
-                 VALUES (:cid, :uid, :nom_orig, :nom_fis, :mime, :ext, :tam, :ruta, :desc)",
-                [
-                    'cid'      => $carpetaId,
-                    'uid'      => $userId,
-                    'nom_orig' => $nombreOriginal,
-                    'nom_fis'  => $nombreFisico,
-                    'mime'     => $validation['mime'],
-                    'ext'      => $extension,
-                    'tam'      => $file['size'],
-                    'ruta'     => $rutaFisica,
-                    'desc'     => !empty($descripcion) ? sanitizeString($descripcion) : null,
-                ]
-            );
+            $archivo = new \App\Entity\Archivo();
+            $archivo->setCarpeta($carpeta);
+            $archivo->setUsuario($usuario);
+            $archivo->setNombreOriginal($nombreOriginal);
+            $archivo->setNombreFisico($nombreFisico);
+            $archivo->setTipoMime($validation['mime']);
+            $archivo->setExtension($extension);
+            $archivo->setTamanoBytes((string)$file['size']);
+            $archivo->setRutaFisica($rutaFisica);
+            $archivo->setDescripcion(!empty($descripcion) ? sanitizeString($descripcion) : null);
 
-            logActivity($userId, 'file_upload', "Archivo subido: {$nombreOriginal}", 'archivo', $archivoId);
+            em()->persist($archivo);
+            em()->flush();
+
+            logActivity($userId, 'file_upload', "Archivo subido: {$nombreOriginal}", 'archivo', $archivo->getId());
             setFlash('success', "Archivo \"{$nombreOriginal}\" subido correctamente.");
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             if (file_exists($rutaFisica)) unlink($rutaFisica);
             setFlash('error', 'Error al registrar el archivo.');
         }
@@ -154,30 +137,30 @@ class ArchivoController {
     }
 
     // =========================================================================
-    // DESCARGAR ARCHIVO
+    // DESCARGAR
     // =========================================================================
 
     public function download($id) {
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId);
 
-        if (!file_exists($archivo['ruta_fisica'])) {
+        if (!file_exists($archivo->getRutaFisica())) {
             setFlash('error', 'El archivo físico no se encontró en el servidor.');
             redirect('/?page=folders');
         }
 
-        logActivity($userId, 'file_download', "Archivo descargado: {$archivo['nombre_original']}", 'archivo', $id);
+        logActivity($userId, 'file_download', "Archivo descargado: {$archivo->getNombreOriginal()}", 'archivo', $id);
 
         header('Content-Description: File Transfer');
-        header('Content-Type: ' . $archivo['tipo_mime']);
-        header('Content-Disposition: attachment; filename="' . $archivo['nombre_original'] . '"');
-        header('Content-Length: ' . $archivo['tamano_bytes']);
+        header('Content-Type: ' . $archivo->getTipoMime());
+        header('Content-Disposition: attachment; filename="' . $archivo->getNombreOriginal() . '"');
+        header('Content-Length: ' . $archivo->getTamanoBytes());
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
         header('Expires: 0');
         ob_clean();
         flush();
-        readfile($archivo['ruta_fisica']);
+        readfile($archivo->getRutaFisica());
         exit;
     }
 
@@ -194,17 +177,15 @@ class ArchivoController {
 
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId);
+        $carpetaId = $archivo->getCarpeta()->getId();
 
-        $this->db->execute(
-            "UPDATE archivos SET en_papelera = 1, fecha_eliminacion = NOW() WHERE id = :id",
-            ['id' => $id]
-        );
+        $archivo->setEnPapelera(true);
+        $archivo->setFechaEliminacion(new \DateTimeImmutable());
+        $archivo->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
-        logActivity($userId, 'file_trash', "Archivo a papelera: {$archivo['nombre_original']}", 'archivo', $id);
+        logActivity($userId, 'file_trash', "Archivo a papelera: {$archivo->getNombreOriginal()}", 'archivo', $id);
         setFlash('success', "Archivo movido a la papelera.");
-
-        // Redirigir de vuelta a la carpeta
-        $carpetaId = $archivo['carpeta_id'];
         redirect("/?page=folders&action=show&id={$carpetaId}");
     }
 
@@ -214,14 +195,14 @@ class ArchivoController {
 
     public function trash() {
         $userId   = getCurrentUserId();
-        $archivos = $this->db->fetchAll(
+        $archivos = em()->getConnection()->executeQuery(
             "SELECT a.*, c.nombre AS carpeta_nombre
              FROM archivos a
              INNER JOIN carpetas c ON a.carpeta_id = c.id
              WHERE a.usuario_id = :uid AND a.en_papelera = 1
              ORDER BY a.fecha_eliminacion DESC",
             ['uid' => $userId]
-        );
+        )->fetchAllAssociative();
 
         return [
             'view'     => 'trash/index',
@@ -230,7 +211,7 @@ class ArchivoController {
     }
 
     // =========================================================================
-    // RESTAURAR DESDE PAPELERA
+    // RESTAURAR
     // =========================================================================
 
     public function restore($id) {
@@ -243,13 +224,13 @@ class ArchivoController {
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId, true);
 
-        $this->db->execute(
-            "UPDATE archivos SET en_papelera = 0, fecha_eliminacion = NULL WHERE id = :id",
-            ['id' => $id]
-        );
+        $archivo->setEnPapelera(false);
+        $archivo->setFechaEliminacion(null);
+        $archivo->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
-        logActivity($userId, 'file_restore', "Archivo restaurado: {$archivo['nombre_original']}", 'archivo', $id);
-        setFlash('success', "Archivo \"{$archivo['nombre_original']}\" restaurado.");
+        logActivity($userId, 'file_restore', "Archivo restaurado: {$archivo->getNombreOriginal()}", 'archivo', $id);
+        setFlash('success', "Archivo \"{$archivo->getNombreOriginal()}\" restaurado.");
         redirect('/?page=trash');
     }
 
@@ -267,15 +248,19 @@ class ArchivoController {
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId, true);
 
-        if (file_exists($archivo['ruta_fisica'])) {
-            unlink($archivo['ruta_fisica']);
-            $dir = dirname($archivo['ruta_fisica']);
+        $rutaFisica     = $archivo->getRutaFisica();
+        $nombreOriginal = $archivo->getNombreOriginal();
+
+        if (file_exists($rutaFisica)) {
+            unlink($rutaFisica);
+            $dir = dirname($rutaFisica);
             if (is_dir($dir) && count(scandir($dir)) == 2) @rmdir($dir);
         }
 
-        $this->db->execute("DELETE FROM archivos WHERE id = :id", ['id' => $id]);
+        em()->remove($archivo);
+        em()->flush();
 
-        logActivity($userId, 'file_delete', "Archivo eliminado: {$archivo['nombre_original']}", 'archivo', $id);
+        logActivity($userId, 'file_delete', "Archivo eliminado: {$nombreOriginal}", 'archivo', $id);
         setFlash('success', "Archivo eliminado permanentemente.");
         redirect('/?page=trash');
     }
@@ -284,15 +269,13 @@ class ArchivoController {
     // HELPER PRIVADO
     // =========================================================================
 
-    private function findArchivoOrFail($id, $userId, $enPapelera = false) {
-        $papeleraFiltro = $enPapelera ? "AND a.en_papelera = 1" : "AND a.en_papelera = 0";
-        $archivo = $this->db->fetchOne(
-            "SELECT a.* FROM archivos a
-             WHERE a.id = :id AND a.usuario_id = :uid {$papeleraFiltro} LIMIT 1",
-            ['id' => $id, 'uid' => $userId]
-        );
+    private function findArchivoOrFail($id, $userId, $enPapelera = false): \App\Entity\Archivo {
+        $archivo = em()->find(\App\Entity\Archivo::class, $id);
 
-        if (!$archivo) {
+        if (!$archivo
+            || $archivo->getUsuario()->getId() !== $userId
+            || $archivo->isEnPapelera() !== $enPapelera
+        ) {
             setFlash('error', 'Archivo no encontrado.');
             redirect('/?page=folders');
         }

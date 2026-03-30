@@ -2,8 +2,6 @@
 /**
  * Controlador de Carpetas
  *
- * Gestiona el listado, creación, edición y eliminación de carpetas.
- *
  * @package RKMarketingDrive
  */
 
@@ -13,16 +11,10 @@ if (!defined('APP_STARTED')) {
 
 class CarpetaController {
 
-    private $db;
-
     public function __construct() {
-        $this->db = db();
         requireAuth();
     }
 
-    /**
-     * Enruta la acción recibida desde el router principal.
-     */
     public function handleRequest($action, $id) {
         switch ($action) {
             case 'show':   return $this->show((int)$id);
@@ -34,35 +26,31 @@ class CarpetaController {
     }
 
     // =========================================================================
-    // LISTADO DE CARPETAS
+    // LISTADO
     // =========================================================================
 
     public function index() {
         $userId   = getCurrentUserId();
         $carpetas = $this->getCarpetasConStats($userId);
-        $limite   = MAX_FOLDERS_PER_CLIENT;
-
         return [
             'view'     => 'folders/index',
             'carpetas' => $carpetas,
-            'limite'   => $limite,
+            'limite'   => MAX_FOLDERS_PER_CLIENT,
         ];
     }
 
     // =========================================================================
-    // DETALLE DE CARPETA (archivos que contiene)
+    // DETALLE
     // =========================================================================
 
     public function show($id) {
         $userId  = getCurrentUserId();
-        $carpeta = $this->findCarpetaOrFail($id, $userId);
+        $carpeta = $this->findCarpetaOrFail($id, $userId)->toArray();
 
-        $archivos = $this->db->fetchAll(
-            "SELECT * FROM archivos
-             WHERE carpeta_id = :cid AND en_papelera = 0
-             ORDER BY fecha_subida DESC",
+        $archivos = em()->getConnection()->executeQuery(
+            "SELECT * FROM archivos WHERE carpeta_id = :cid AND en_papelera = 0 ORDER BY fecha_subida DESC",
             ['cid' => $id]
-        );
+        )->fetchAllAssociative();
 
         return [
             'view'     => 'folders/show',
@@ -72,7 +60,7 @@ class CarpetaController {
     }
 
     // =========================================================================
-    // CREAR CARPETA (solo POST)
+    // CREAR
     // =========================================================================
 
     public function create() {
@@ -96,29 +84,26 @@ class CarpetaController {
             redirect('/?page=folders');
         }
 
-        // Verificar límite de carpetas
-        $total = $this->countCarpetas($userId);
-        if ($total >= MAX_FOLDERS_PER_CLIENT) {
+        if ($this->countCarpetas($userId) >= MAX_FOLDERS_PER_CLIENT) {
             setFlash('error', "Has alcanzado el límite de " . MAX_FOLDERS_PER_CLIENT . " carpetas.");
             redirect('/?page=folders');
         }
 
-        $this->db->insert(
-            "INSERT INTO carpetas (usuario_id, nombre, descripcion) VALUES (:uid, :nombre, :desc)",
-            [
-                'uid'    => $userId,
-                'nombre' => sanitizeString($nombre),
-                'desc'   => !empty($desc) ? sanitizeString($desc) : null,
-            ]
-        );
+        $carpeta = new \App\Entity\Carpeta();
+        $carpeta->setUsuario(em()->getReference(\App\Entity\Usuario::class, $userId));
+        $carpeta->setNombre(sanitizeString($nombre));
+        $carpeta->setDescripcion(!empty($desc) ? sanitizeString($desc) : null);
 
-        logActivity($userId, 'folder_create', "Carpeta creada: {$nombre}", 'carpeta', null);
+        em()->persist($carpeta);
+        em()->flush();
+
+        logActivity($userId, 'folder_create', "Carpeta creada: {$nombre}", 'carpeta', $carpeta->getId());
         setFlash('success', "Carpeta \"{$nombre}\" creada correctamente.");
         redirect('/?page=folders');
     }
 
     // =========================================================================
-    // EDITAR CARPETA (solo POST)
+    // EDITAR
     // =========================================================================
 
     public function edit($id) {
@@ -130,6 +115,7 @@ class CarpetaController {
 
         $userId  = getCurrentUserId();
         $carpeta = $this->findCarpetaOrFail($id, $userId);
+        $nombreAnterior = $carpeta->getNombre();
 
         $nombre = trim($_POST['nombre'] ?? '');
         $desc   = trim($_POST['descripcion'] ?? '');
@@ -139,22 +125,18 @@ class CarpetaController {
             redirect('/?page=folders');
         }
 
-        $this->db->execute(
-            "UPDATE carpetas SET nombre = :nombre, descripcion = :desc WHERE id = :id",
-            [
-                'nombre' => sanitizeString($nombre),
-                'desc'   => !empty($desc) ? sanitizeString($desc) : null,
-                'id'     => $id,
-            ]
-        );
+        $carpeta->setNombre(sanitizeString($nombre));
+        $carpeta->setDescripcion(!empty($desc) ? sanitizeString($desc) : null);
+        $carpeta->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
-        logActivity($userId, 'folder_edit', "Carpeta renombrada: {$carpeta['nombre']} → {$nombre}", 'carpeta', $id);
+        logActivity($userId, 'folder_edit', "Carpeta renombrada: {$nombreAnterior} → {$nombre}", 'carpeta', $id);
         setFlash('success', "Carpeta actualizada correctamente.");
         redirect('/?page=folders');
     }
 
     // =========================================================================
-    // ELIMINAR CARPETA (soft delete — solo POST)
+    // ELIMINAR (soft delete)
     // =========================================================================
 
     public function delete($id) {
@@ -167,21 +149,23 @@ class CarpetaController {
         $userId  = getCurrentUserId();
         $carpeta = $this->findCarpetaOrFail($id, $userId);
 
-        // Contar archivos activos en la carpeta
-        $countRow = $this->db->fetchOne(
-            "SELECT COUNT(*) as total FROM archivos WHERE carpeta_id = :id AND en_papelera = 0",
+        $countRow = em()->getConnection()->executeQuery(
+            "SELECT COUNT(*) AS total FROM archivos WHERE carpeta_id = :id AND en_papelera = 0",
             ['id' => $id]
-        );
+        )->fetchAssociative();
 
         if ((int)$countRow['total'] > 0) {
             setFlash('error', 'No puedes eliminar una carpeta que tiene archivos. Muévelos o elimínalos primero.');
             redirect('/?page=folders');
         }
 
-        $this->db->execute("UPDATE carpetas SET activa = 0 WHERE id = :id", ['id' => $id]);
+        $nombre = $carpeta->getNombre();
+        $carpeta->setActiva(false);
+        $carpeta->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
-        logActivity($userId, 'folder_delete', "Carpeta eliminada: {$carpeta['nombre']}", 'carpeta', $id);
-        setFlash('success', "Carpeta \"{$carpeta['nombre']}\" eliminada.");
+        logActivity($userId, 'folder_delete', "Carpeta eliminada: {$nombre}", 'carpeta', $id);
+        setFlash('success', "Carpeta \"{$nombre}\" eliminada.");
         redirect('/?page=folders');
     }
 
@@ -190,7 +174,7 @@ class CarpetaController {
     // =========================================================================
 
     private function getCarpetasConStats($userId) {
-        return $this->db->fetchAll(
+        return em()->getConnection()->executeQuery(
             "SELECT c.id, c.nombre, c.descripcion, c.fecha_creacion,
                     COUNT(a.id) AS total_archivos,
                     COALESCE(SUM(a.tamano_bytes), 0) AS tamano_total
@@ -200,27 +184,21 @@ class CarpetaController {
              GROUP BY c.id
              ORDER BY c.fecha_creacion DESC",
             ['uid' => $userId]
-        );
+        )->fetchAllAssociative();
     }
 
     private function countCarpetas($userId) {
-        $row = $this->db->fetchOne(
-            "SELECT COUNT(*) as total FROM carpetas WHERE usuario_id = :uid AND activa = 1",
+        $row = em()->getConnection()->executeQuery(
+            "SELECT COUNT(*) AS total FROM carpetas WHERE usuario_id = :uid AND activa = 1",
             ['uid' => $userId]
-        );
+        )->fetchAssociative();
         return (int)($row['total'] ?? 0);
     }
 
-    /**
-     * Busca una carpeta verificando propiedad; redirige si no existe o no pertenece al usuario.
-     */
-    private function findCarpetaOrFail($id, $userId) {
-        $carpeta = $this->db->fetchOne(
-            "SELECT * FROM carpetas WHERE id = :id AND usuario_id = :uid AND activa = 1 LIMIT 1",
-            ['id' => $id, 'uid' => $userId]
-        );
+    private function findCarpetaOrFail($id, $userId): \App\Entity\Carpeta {
+        $carpeta = em()->find(\App\Entity\Carpeta::class, $id);
 
-        if (!$carpeta) {
+        if (!$carpeta || !$carpeta->isActiva() || $carpeta->getUsuario()->getId() !== $userId) {
             setFlash('error', 'Carpeta no encontrada.');
             redirect('/?page=folders');
         }

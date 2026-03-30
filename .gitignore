@@ -23,3 +23,7 @@ Thumbs.db
 
 # PHP
 *.swp
+
+# Composer
+vendor/
+composer.lock

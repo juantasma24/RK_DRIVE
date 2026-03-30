@@ -2,8 +2,6 @@
 /**
  * Controlador de Usuario
  *
- * Gestiona el perfil y configuración del usuario autenticado.
- *
  * @package RKMarketingDrive
  */
 
@@ -13,10 +11,7 @@ if (!defined('APP_STARTED')) {
 
 class UsuarioController {
 
-    private $db;
-
     public function __construct() {
-        $this->db = db();
         requireAuth();
     }
 
@@ -33,22 +28,17 @@ class UsuarioController {
             }
         }
 
-        $usuario = $this->db->fetchOne(
-            "SELECT id, nombre, email, rol, almacenamiento_usado, almacenamiento_maximo,
-                    ultimo_acceso, fecha_creacion
-             FROM usuarios WHERE id = :id LIMIT 1",
-            ['id' => $userId]
-        );
+        $usuario = em()->find(\App\Entity\Usuario::class, $userId);
 
-        $actividad = $this->db->fetchAll(
+        $actividad = em()->getConnection()->executeQuery(
             "SELECT accion, descripcion, fecha FROM logs_actividad
              WHERE usuario_id = :id ORDER BY fecha DESC LIMIT 10",
             ['id' => $userId]
-        );
+        )->fetchAllAssociative();
 
         return [
             'view'      => 'profile/index',
-            'usuario'   => $usuario,
+            'usuario'   => $usuario->toArray(),
             'actividad' => $actividad,
         ];
     }
@@ -71,19 +61,17 @@ class UsuarioController {
         }
 
         // Verificar email único
-        $existe = $this->db->fetchOne(
-            "SELECT id FROM usuarios WHERE email = :email AND id != :id LIMIT 1",
-            ['email' => $email, 'id' => $userId]
-        );
-        if ($existe) {
+        $existing = (new \App\Repository\UsuarioRepository(em()))->findByEmail($email);
+        if ($existing && $existing->getId() !== $userId) {
             setFlash('error', 'Ese email ya está en uso por otro usuario.');
             return;
         }
 
-        $this->db->execute(
-            "UPDATE usuarios SET nombre = :nombre, email = :email WHERE id = :id",
-            ['nombre' => sanitizeString($nombre), 'email' => $email, 'id' => $userId]
-        );
+        $usuario = em()->find(\App\Entity\Usuario::class, $userId);
+        $usuario->setNombre(sanitizeString($nombre));
+        $usuario->setEmail($email);
+        $usuario->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
         $_SESSION['user_name']  = sanitizeString($nombre);
         $_SESSION['user_email'] = $email;
@@ -110,29 +98,14 @@ class UsuarioController {
             return;
         }
 
-        $row = $this->db->fetchOne(
-            "SELECT password_hash FROM usuarios WHERE id = :id LIMIT 1",
-            ['id' => $userId]
-        );
+        $result = changePassword($userId, $actual, $nueva);
 
-        if (!verifyPassword($actual, $row['password_hash'])) {
-            setFlash('error', 'La contraseña actual es incorrecta.');
-            return;
+        if ($result['success']) {
+            setFlash('success', 'Contraseña actualizada correctamente.');
+            redirect('/?page=profile');
+        } else {
+            $msg = !empty($result['errors']) ? implode(' ', $result['errors']) : $result['error'];
+            setFlash('error', $msg);
         }
-
-        $validacion = validatePassword($nueva);
-        if (!$validacion['valid']) {
-            setFlash('error', implode(' ', $validacion['errors']));
-            return;
-        }
-
-        $this->db->execute(
-            "UPDATE usuarios SET password_hash = :hash WHERE id = :id",
-            ['hash' => hashPassword($nueva), 'id' => $userId]
-        );
-
-        logActivity($userId, 'password_change', 'Contraseña cambiada', 'usuario', $userId);
-        setFlash('success', 'Contraseña actualizada correctamente.');
-        redirect('/?page=profile');
     }
 }

@@ -23,6 +23,9 @@ define('APP_STARTED', true);
 // CARGAR ARCHIVOS NECESARIOS (antes de usar cualquier funcion)
 //=============================================================================
 
+// Composer autoloader (Doctrine + PSR-4 App\)
+require_once __DIR__ . '/vendor/autoload.php';
+
 // Configuracion global
 if (file_exists(__DIR__ . '/config/config.php')) {
     require_once __DIR__ . '/config/config.php';
@@ -40,6 +43,9 @@ require_once __DIR__ . '/src/procesos/auth.php';
 // Configuracion de base de datos
 require_once __DIR__ . '/config/database.php';
 
+// Doctrine ORM - EntityManager
+require_once __DIR__ . '/config/doctrine.php';
+
 // Configuracion de email
 require_once __DIR__ . '/config/mail.php';
 
@@ -53,18 +59,14 @@ startSecureSession();
 // AUTOLOAD DE CLASES
 //=============================================================================
 
+// Solo controladores sin namespace (las entidades App\ las carga el autoloader de Composer)
 spl_autoload_register(function ($className) {
-    $directories = [
-        __DIR__ . '/src/Entity/',
-        __DIR__ . '/src/controllers/',
-    ];
-
-    foreach ($directories as $directory) {
-        $file = $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+    if (str_contains($className, '\\')) {
+        return;
+    }
+    $file = __DIR__ . '/src/controllers/' . $className . '.php';
+    if (file_exists($file)) {
+        require_once $file;
     }
 });
 

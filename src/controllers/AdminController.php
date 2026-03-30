@@ -2,8 +2,6 @@
 /**
  * Controlador de Administración
  *
- * Gestiona usuarios, archivos, logs y configuración del sistema.
- *
  * @package RKMarketingDrive
  */
 
@@ -13,10 +11,7 @@ if (!defined('APP_STARTED')) {
 
 class AdminController {
 
-    private $db;
-
     public function __construct() {
-        $this->db = db();
         requireAuth('admin');
     }
 
@@ -35,7 +30,7 @@ class AdminController {
     }
 
     private function listUsers() {
-        $usuarios = $this->db->fetchAll(
+        $usuarios = em()->getConnection()->executeQuery(
             "SELECT u.id, u.nombre, u.email, u.rol, u.activo,
                     u.almacenamiento_usado, u.almacenamiento_maximo,
                     u.ultimo_acceso, u.fecha_creacion,
@@ -46,7 +41,7 @@ class AdminController {
              LEFT JOIN archivos a ON u.id = a.usuario_id AND a.en_papelera = 0
              GROUP BY u.id
              ORDER BY u.fecha_creacion DESC"
-        );
+        )->fetchAllAssociative();
 
         return ['view' => 'admin/users', 'usuarios' => $usuarios];
     }
@@ -74,15 +69,10 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        if (!in_array($rol, ['cliente', 'admin'])) {
-            $rol = 'cliente';
-        }
+        if (!in_array($rol, ['cliente', 'admin'])) $rol = 'cliente';
 
-        $existe = $this->db->fetchOne(
-            "SELECT id FROM usuarios WHERE email = :email LIMIT 1",
-            ['email' => $email]
-        );
-        if ($existe) {
+        $repo = new \App\Repository\UsuarioRepository(em());
+        if ($repo->findByEmail($email)) {
             setFlash('error', 'Ya existe un usuario con ese email.');
             redirect('/?page=admin/users');
         }
@@ -93,21 +83,16 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        $storageBytes = $storageGB * 1024 * 1024 * 1024;
+        $usuario = new \App\Entity\Usuario();
+        $usuario->setNombre(sanitizeString($nombre));
+        $usuario->setEmail($email);
+        $usuario->setPasswordHash(hashPassword($password));
+        $usuario->setRol($rol);
+        $usuario->setAlmacenamientoMaximo((string)($storageGB * 1024 * 1024 * 1024));
 
-        $userId = $this->db->insert(
-            "INSERT INTO usuarios (nombre, email, password_hash, rol, almacenamiento_maximo, activo)
-             VALUES (:nombre, :email, :hash, :rol, :storage, 1)",
-            [
-                'nombre'  => sanitizeString($nombre),
-                'email'   => $email,
-                'hash'    => hashPassword($password),
-                'rol'     => $rol,
-                'storage' => $storageBytes,
-            ]
-        );
+        $repo->save($usuario);
 
-        logActivity(getCurrentUserId(), 'admin_user_create', "Usuario creado: {$nombre} ({$email})", 'usuario', $userId);
+        logActivity(getCurrentUserId(), 'admin_user_create', "Usuario creado: {$nombre} ({$email})", 'usuario', $usuario->getId());
         setFlash('success', "Usuario \"{$nombre}\" creado correctamente.");
         redirect('/?page=admin/users');
     }
@@ -134,32 +119,26 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        if (!in_array($rol, ['cliente', 'admin'])) {
-            $rol = 'cliente';
-        }
+        if (!in_array($rol, ['cliente', 'admin'])) $rol = 'cliente';
 
-        $existe = $this->db->fetchOne(
-            "SELECT id FROM usuarios WHERE email = :email AND id != :id LIMIT 1",
-            ['email' => $email, 'id' => $id]
-        );
-        if ($existe) {
+        $existing = (new \App\Repository\UsuarioRepository(em()))->findByEmail($email);
+        if ($existing && $existing->getId() !== $id) {
             setFlash('error', 'Ese email ya está en uso.');
             redirect('/?page=admin/users');
         }
 
-        $storageBytes = $storageGB * 1024 * 1024 * 1024;
+        $usuario = em()->find(\App\Entity\Usuario::class, $id);
+        if (!$usuario) {
+            setFlash('error', 'Usuario no encontrado.');
+            redirect('/?page=admin/users');
+        }
 
-        $this->db->execute(
-            "UPDATE usuarios SET nombre = :nombre, email = :email, rol = :rol,
-             almacenamiento_maximo = :storage WHERE id = :id",
-            [
-                'nombre'  => sanitizeString($nombre),
-                'email'   => $email,
-                'rol'     => $rol,
-                'storage' => $storageBytes,
-                'id'      => $id,
-            ]
-        );
+        $usuario->setNombre(sanitizeString($nombre));
+        $usuario->setEmail($email);
+        $usuario->setRol($rol);
+        $usuario->setAlmacenamientoMaximo((string)($storageGB * 1024 * 1024 * 1024));
+        $usuario->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
         logActivity(getCurrentUserId(), 'admin_user_edit', "Usuario editado: ID {$id}", 'usuario', $id);
         setFlash('success', 'Usuario actualizado correctamente.');
@@ -172,30 +151,25 @@ class AdminController {
         }
         requireCSRFToken();
 
-        // No permitir desactivar al propio admin
         if ($id === getCurrentUserId()) {
             setFlash('error', 'No puedes desactivar tu propia cuenta.');
             redirect('/?page=admin/users');
         }
 
-        $usuario = $this->db->fetchOne(
-            "SELECT id, nombre, activo FROM usuarios WHERE id = :id LIMIT 1",
-            ['id' => $id]
-        );
+        $usuario = em()->find(\App\Entity\Usuario::class, $id);
         if (!$usuario) {
             setFlash('error', 'Usuario no encontrado.');
             redirect('/?page=admin/users');
         }
 
-        $nuevoEstado = $usuario['activo'] ? 0 : 1;
-        $this->db->execute(
-            "UPDATE usuarios SET activo = :activo WHERE id = :id",
-            ['activo' => $nuevoEstado, 'id' => $id]
-        );
+        $nuevoEstado = !$usuario->isActivo();
+        $usuario->setActivo($nuevoEstado);
+        $usuario->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
 
         $accion = $nuevoEstado ? 'activado' : 'desactivado';
-        logActivity(getCurrentUserId(), 'admin_user_toggle', "Usuario {$accion}: {$usuario['nombre']}", 'usuario', $id);
-        setFlash('success', "Usuario \"{$usuario['nombre']}\" {$accion}.");
+        logActivity(getCurrentUserId(), 'admin_user_toggle', "Usuario {$accion}: {$usuario->getNombre()}", 'usuario', $id);
+        setFlash('success', "Usuario \"{$usuario->getNombre()}\" {$accion}.");
         redirect('/?page=admin/users');
     }
 
@@ -210,30 +184,28 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        $usuario = $this->db->fetchOne(
-            "SELECT nombre FROM usuarios WHERE id = :id LIMIT 1",
-            ['id' => $id]
-        );
+        $usuario = em()->find(\App\Entity\Usuario::class, $id);
         if (!$usuario) {
             setFlash('error', 'Usuario no encontrado.');
             redirect('/?page=admin/users');
         }
 
-        // Eliminar archivos físicos del usuario
-        $archivos = $this->db->fetchAll(
+        // Eliminar archivos físicos antes de borrar el registro (CASCADE borra la BD)
+        $archivos = em()->getConnection()->executeQuery(
             "SELECT ruta_fisica FROM archivos WHERE usuario_id = :id",
             ['id' => $id]
-        );
+        )->fetchAllAssociative();
+
         foreach ($archivos as $archivo) {
-            if (file_exists($archivo['ruta_fisica'])) {
-                unlink($archivo['ruta_fisica']);
-            }
+            if (file_exists($archivo['ruta_fisica'])) unlink($archivo['ruta_fisica']);
         }
 
-        $this->db->execute("DELETE FROM usuarios WHERE id = :id", ['id' => $id]);
+        $nombre = $usuario->getNombre();
+        em()->remove($usuario);
+        em()->flush();
 
-        logActivity(getCurrentUserId(), 'admin_user_delete', "Usuario eliminado: {$usuario['nombre']}", 'usuario', $id);
-        setFlash('success', "Usuario \"{$usuario['nombre']}\" eliminado permanentemente.");
+        logActivity(getCurrentUserId(), 'admin_user_delete', "Usuario eliminado: {$nombre}", 'usuario', $id);
+        setFlash('success', "Usuario \"{$nombre}\" eliminado permanentemente.");
         redirect('/?page=admin/users');
     }
 
@@ -249,7 +221,7 @@ class AdminController {
     }
 
     private function listFiles() {
-        $archivos = $this->db->fetchAll(
+        $archivos = em()->getConnection()->executeQuery(
             "SELECT a.id, a.nombre_original, a.extension, a.tamano_bytes,
                     a.en_papelera, a.fecha_subida, a.fecha_eliminacion,
                     c.nombre AS carpeta_nombre,
@@ -259,16 +231,16 @@ class AdminController {
              INNER JOIN usuarios u ON a.usuario_id = u.id
              ORDER BY a.fecha_subida DESC
              LIMIT 200"
-        );
+        )->fetchAllAssociative();
 
-        $totalSize = $this->db->fetchOne(
+        $totalSize = em()->getConnection()->executeQuery(
             "SELECT COALESCE(SUM(tamano_bytes), 0) AS total FROM archivos WHERE en_papelera = 0"
-        );
+        )->fetchAssociative();
 
         return [
-            'view'       => 'admin/files',
-            'archivos'   => $archivos,
-            'totalSize'  => (int)$totalSize['total'],
+            'view'      => 'admin/files',
+            'archivos'  => $archivos,
+            'totalSize' => (int)$totalSize['total'],
         ];
     }
 
@@ -278,22 +250,21 @@ class AdminController {
         }
         requireCSRFToken();
 
-        $archivo = $this->db->fetchOne(
-            "SELECT nombre_original, ruta_fisica FROM archivos WHERE id = :id LIMIT 1",
-            ['id' => $id]
-        );
+        $archivo = em()->find(\App\Entity\Archivo::class, $id);
         if (!$archivo) {
             setFlash('error', 'Archivo no encontrado.');
             redirect('/?page=admin/files');
         }
 
-        if (file_exists($archivo['ruta_fisica'])) {
-            unlink($archivo['ruta_fisica']);
-        }
+        $rutaFisica     = $archivo->getRutaFisica();
+        $nombreOriginal = $archivo->getNombreOriginal();
 
-        $this->db->execute("DELETE FROM archivos WHERE id = :id", ['id' => $id]);
+        if (file_exists($rutaFisica)) unlink($rutaFisica);
 
-        logActivity(getCurrentUserId(), 'admin_file_delete', "Archivo eliminado: {$archivo['nombre_original']}", 'archivo', $id);
+        em()->remove($archivo);
+        em()->flush();
+
+        logActivity(getCurrentUserId(), 'admin_file_delete', "Archivo eliminado: {$nombreOriginal}", 'archivo', $id);
         setFlash('success', "Archivo eliminado correctamente.");
         redirect('/?page=admin/files');
     }
@@ -325,7 +296,7 @@ class AdminController {
 
         $sql .= " ORDER BY l.fecha DESC LIMIT 300";
 
-        $logs = $this->db->fetchAll($sql, $params);
+        $logs = em()->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
 
         return [
             'view'          => 'admin/logs',
@@ -350,7 +321,7 @@ class AdminController {
                 if (isset($_POST[$clave])) {
                     $valor = (int)$_POST[$clave];
                     if ($valor > 0) {
-                        $this->db->execute(
+                        em()->getConnection()->executeStatement(
                             "UPDATE configuracion_sistema SET valor = :valor WHERE clave = :clave",
                             ['valor' => $valor, 'clave' => $clave]
                         );
@@ -363,13 +334,18 @@ class AdminController {
             redirect('/?page=admin/settings');
         }
 
-        $config = $this->db->fetchAll("SELECT clave, valor, descripcion FROM configuracion_sistema ORDER BY id");
+        $rows = em()->getConnection()->executeQuery(
+            "SELECT clave, valor, descripcion FROM configuracion_sistema ORDER BY id"
+        )->fetchAllAssociative();
+
         $configMap = [];
-        foreach ($config as $row) {
+        foreach ($rows as $row) {
             $configMap[$row['clave']] = $row;
         }
 
-        $limpieza = $this->db->fetchOne("SELECT * FROM configuracion_limpieza LIMIT 1");
+        $limpieza = em()->getConnection()->executeQuery(
+            "SELECT * FROM configuracion_limpieza LIMIT 1"
+        )->fetchAssociative();
 
         return [
             'view'     => 'admin/settings',
