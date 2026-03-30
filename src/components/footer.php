@@ -31,6 +31,31 @@
         <?php endforeach; ?>
     <?php endif; ?>
 
+    <!-- Dark / Light mode toggle — inline para garantizar ejecucion sin cache -->
+    <script>
+    (function () {
+        var btn  = document.getElementById('themeToggle');
+        var icon = document.getElementById('themeIcon');
+
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('rk-theme', t);
+            if (icon) icon.className = t === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        }
+
+        // Sincronizar icono con tema actual
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        if (icon) icon.className = current === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+
+        if (btn) {
+            btn.addEventListener('click', function () {
+                var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                applyTheme(next);
+            });
+        }
+    })();
+    </script>
+
     <!-- Script inline para CSRF -->
     <script>
         // Token CSRF para peticiones AJAX
