@@ -12,7 +12,7 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1"><i class="bi bi-files me-2 text-primary"></i>Gestión de Archivos</h2>
+        <h2 class="mb-1"><i class="bi bi-files me-2 text-primary"></i>Gestion de Archivos</h2>
         <p class="text-muted mb-0">
             <?= $totalArchivos ?> archivo<?= $totalArchivos != 1 ? 's' : '' ?> en el sistema
             &mdash; <?= formatFileSize($totalSize) ?> en uso
@@ -20,43 +20,43 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
     </div>
 </div>
 
-<!-- Resumen rápido -->
+<!-- Resumen rapido -->
 <div class="row g-3 mb-4">
     <div class="col-sm-4">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="stat-icon bg-primary-subtle text-primary rounded-3 p-3">
+                <div class="stat-icon bg-primary-subtle text-primary">
                     <i class="bi bi-file-earmark-check fs-4"></i>
                 </div>
                 <div>
-                    <div class="fs-3 fw-bold"><?= count($activos) ?></div>
-                    <div class="text-muted small">Archivos activos</div>
+                    <div class="fs-3 fw-bold" style="line-height:1.1;"><?= count($activos) ?></div>
+                    <div class="text-muted small mt-1">Archivos activos</div>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="stat-icon bg-warning-subtle text-warning rounded-3 p-3">
+                <div class="stat-icon bg-warning-subtle text-warning">
                     <i class="bi bi-trash fs-4"></i>
                 </div>
                 <div>
-                    <div class="fs-3 fw-bold"><?= count($enPapelera) ?></div>
-                    <div class="text-muted small">En papelera</div>
+                    <div class="fs-3 fw-bold" style="line-height:1.1;"><?= count($enPapelera) ?></div>
+                    <div class="text-muted small mt-1">En papelera</div>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-4">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="stat-icon bg-info-subtle text-info rounded-3 p-3">
+                <div class="stat-icon bg-info-subtle text-info">
                     <i class="bi bi-hdd-stack fs-4"></i>
                 </div>
                 <div>
-                    <div class="fs-3 fw-bold"><?= formatFileSize($totalSize) ?></div>
-                    <div class="text-muted small">Almacenamiento usado</div>
+                    <div class="fs-3 fw-bold" style="line-height:1.1;"><?= formatFileSize($totalSize) ?></div>
+                    <div class="text-muted small mt-1">Almacenamiento usado</div>
                 </div>
             </div>
         </div>
@@ -64,14 +64,14 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
 </div>
 
 <?php if (empty($archivos)): ?>
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body text-center py-5">
-        <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+        <i class="bi bi-inbox text-muted" style="font-size:4rem;"></i>
         <h5 class="mt-3">No hay archivos en el sistema</h5>
     </div>
 </div>
 <?php else: ?>
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -80,7 +80,7 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
                         <th class="ps-3">Archivo</th>
                         <th>Usuario</th>
                         <th>Carpeta</th>
-                        <th>Tamaño</th>
+                        <th>Tamano</th>
                         <th>Estado</th>
                         <th>Fecha subida</th>
                         <th class="text-end pe-3">Acciones</th>
@@ -91,22 +91,25 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
                     <tr>
                         <td class="ps-3">
                             <div class="d-flex align-items-center gap-2">
-                                <i class="bi <?= getFileIcon($a['extension']) ?> text-secondary fs-5"></i>
+                                <i class="bi <?= getFileIcon($a['extension']) ?> text-muted fs-5 flex-shrink-0"></i>
                                 <div>
-                                    <div class="small fw-semibold text-truncate" style="max-width:220px"
+                                    <div class="small fw-semibold text-truncate"
+                                         style="max-width:200px;color:var(--text-primary);"
                                          title="<?= sanitize($a['nombre_original']) ?>">
                                         <?= sanitize(truncateText($a['nombre_original'], 35)) ?>
                                     </div>
-                                    <div class="text-muted" style="font-size:.7rem">.<?= sanitize($a['extension']) ?></div>
+                                    <div class="text-muted" style="font-size:.7rem;">.<?= sanitize($a['extension']) ?></div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="small fw-semibold"><?= sanitize($a['usuario_nombre']) ?></div>
-                            <div class="text-muted" style="font-size:.7rem"><?= sanitize($a['usuario_email']) ?></div>
+                            <div class="small fw-semibold" style="color:var(--text-primary);">
+                                <?= sanitize($a['usuario_nombre']) ?>
+                            </div>
+                            <div class="text-muted" style="font-size:.7rem;"><?= sanitize($a['usuario_email']) ?></div>
                         </td>
                         <td class="small text-muted"><?= sanitize($a['carpeta_nombre']) ?></td>
-                        <td class="small"><?= formatFileSize($a['tamano_bytes']) ?></td>
+                        <td class="small text-muted"><?= formatFileSize($a['tamano_bytes']) ?></td>
                         <td>
                             <?php if ($a['en_papelera']): ?>
                             <span class="badge bg-warning-subtle text-warning">
@@ -145,20 +148,23 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
             <form method="POST" id="formEliminar" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title text-danger"><i class="bi bi-trash me-2"></i>Eliminar Archivo</h5>
+                    <h5 class="modal-title text-danger"><i class="bi bi-trash"></i>Eliminar Archivo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Estás seguro de que deseas eliminar permanentemente el archivo <strong id="eliminar_nombre"></strong>?</p>
+                    <p style="color:var(--text-secondary);">
+                        ¿Estas seguro de que deseas eliminar permanentemente el archivo
+                        <strong id="eliminar_nombre" style="color:var(--text-primary);"></strong>?
+                    </p>
                     <div class="alert alert-danger py-2 small">
                         <i class="bi bi-exclamation-triangle me-1"></i>
-                        El archivo físico se borrará del servidor. Esta acción no se puede deshacer.
+                        El archivo fisico se borrara del servidor. Esta accion no se puede deshacer.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-2"></i>Eliminar Permanentemente
+                        <i class="bi bi-trash"></i>Eliminar Permanentemente
                     </button>
                 </div>
             </form>
@@ -166,17 +172,6 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
     </div>
 </div>
 
-
-<style>
-.stat-icon {
-    flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-</style>
 
 <script>
 function confirmarEliminar(id, nombre) {

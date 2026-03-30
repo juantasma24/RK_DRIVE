@@ -110,8 +110,8 @@ class DashboardController {
              INNER JOIN carpetas c ON a.carpeta_id = c.id
              WHERE a.usuario_id = :id AND a.en_papelera = 0
              ORDER BY a.fecha_subida DESC
-             LIMIT :limit",
-            ['id' => $userId, 'limit' => $limit]
+             LIMIT " . (int)$limit,
+            ['id' => $userId]
         )->fetchAllAssociative();
     }
 
@@ -119,8 +119,8 @@ class DashboardController {
         if ($userId) {
             return em()->getConnection()->executeQuery(
                 "SELECT accion, descripcion, fecha FROM logs_actividad
-                 WHERE usuario_id = :id ORDER BY fecha DESC LIMIT :limit",
-                ['id' => $userId, 'limit' => $limit]
+                 WHERE usuario_id = :id ORDER BY fecha DESC LIMIT " . (int)$limit,
+                ['id' => $userId]
             )->fetchAllAssociative();
         }
 
@@ -128,8 +128,7 @@ class DashboardController {
             "SELECT l.accion, l.descripcion, l.fecha, u.nombre AS usuario_nombre
              FROM logs_actividad l
              LEFT JOIN usuarios u ON l.usuario_id = u.id
-             ORDER BY l.fecha DESC LIMIT :limit",
-            ['limit' => $limit]
+             ORDER BY l.fecha DESC LIMIT " . (int)$limit
         )->fetchAllAssociative();
     }
 
@@ -177,8 +176,7 @@ class DashboardController {
              INNER JOIN usuarios u ON a.usuario_id = u.id
              WHERE a.en_papelera = 0
              ORDER BY a.fecha_subida DESC
-             LIMIT :limit",
-            ['limit' => $limit]
+             LIMIT " . (int)$limit
         )->fetchAllAssociative();
     }
 

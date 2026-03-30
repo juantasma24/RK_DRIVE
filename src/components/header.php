@@ -11,6 +11,11 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="<?= APP_URL ?>/public/img/favicon.ico">
 
+    <!-- Google Fonts: Poppins + Manrope -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/vendor/bootstrap/css/bootstrap.min.css">
 
@@ -20,110 +25,173 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css?v=<?= APP_VERSION ?>">
 
+    <!-- Aplicar tema guardado antes de render para evitar flash -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('rk-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <!-- CSRF Token para AJAX -->
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
 </head>
 <body class="<?= isset($bodyClass) ? $bodyClass : '' ?>">
+
     <!-- Navigation -->
     <?php if (isAuthenticated()): ?>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
+
+            <!-- Brand / Logo -->
             <a class="navbar-brand" href="<?= APP_URL ?>/dashboard">
-                <i class="bi bi-cloud-arrow-up me-2"></i>
-                RK Marketing Drive
+                <img src="<?= APP_URL ?>/public/img/logos/logo_rk_blanco.svg" alt="RK Drive" height="32">
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- Mobile toggler -->
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Menu principal -->
+
+                <!-- Main navigation -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link <?= ($page ?? '') === 'dashboard' ? 'active' : '' ?>" href="<?= APP_URL ?>/dashboard">
-                            <i class="bi bi-speedometer2 me-1"></i> Panel
+                        <a class="nav-link <?= ($page ?? '') === 'dashboard' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/dashboard">
+                            <i class="bi bi-speedometer2"></i> Panel
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?= ($page ?? '') === 'folders' ? 'active' : '' ?>" href="<?= APP_URL ?>/folders">
-                            <i class="bi bi-folder me-1"></i> Carpetas
+                        <a class="nav-link <?= ($page ?? '') === 'folders' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/folders">
+                            <i class="bi bi-folder"></i> Carpetas
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link <?= ($page ?? '') === 'trash' ? 'active' : '' ?>" href="<?= APP_URL ?>/trash">
-                            <i class="bi bi-trash me-1"></i> Papelera
+                        <a class="nav-link <?= ($page ?? '') === 'trash' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/trash">
+                            <i class="bi bi-trash"></i> Papelera
                         </a>
                     </li>
 
                     <?php if (isAdmin()): ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-gear me-1"></i> Administracion
+                        <a class="nav-link dropdown-toggle <?= str_starts_with($page ?? '', 'admin') ? 'active' : '' ?>"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> Administracion
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/users"><i class="bi bi-people me-2"></i>Usuarios</a></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/files"><i class="bi bi-files me-2"></i>Archivos</a></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/logs"><i class="bi bi-journal-text me-2"></i>Logs</a></li>
+                            <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/users">
+                                    <i class="bi bi-people"></i>Usuarios
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/files">
+                                    <i class="bi bi-files"></i>Archivos
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/logs">
+                                    <i class="bi bi-journal-text"></i>Logs
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/admin/settings"><i class="bi bi-sliders me-2"></i>Configuracion</a></li>
+                            <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/settings">
+                                    <i class="bi bi-sliders"></i>Configuracion
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     <?php endif; ?>
                 </ul>
 
-                <!-- Menu derecho -->
-                <ul class="navbar-nav">
-                    <!-- Notificaciones -->
+                <!-- Right-side navigation -->
+                <ul class="navbar-nav align-items-center gap-1">
+
+                    <!-- Dark / Light toggle -->
+                    <li class="nav-item">
+                        <button id="themeToggle" class="btn-theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
+                            <i class="bi bi-sun-fill" id="themeIcon"></i>
+                        </button>
+                    </li>
+
+                    <!-- Notifications -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown"
+                           aria-expanded="false" title="Notificaciones">
                             <i class="bi bi-bell"></i>
                             <?php
                             $unreadNotifications = 0;
                             // TODO: Implementar contador real de notificaciones
                             ?>
                             <?php if ($unreadNotifications > 0): ?>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size:0.6rem;padding:0.2em 0.4em;">
                                 <?= $unreadNotifications > 99 ? '99+' : $unreadNotifications ?>
                             </span>
                             <?php endif; ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
-                            <li><h6 class="dropdown-header">Notificaciones</h6></li>
+                        <ul class="dropdown-menu dropdown-menu-end" style="min-width:280px;">
+                            <li><span class="dropdown-header">Notificaciones</span></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center" href="<?= APP_URL ?>/notifications">Ver todas</a></li>
+                            <li>
+                                <a class="dropdown-item justify-content-center" href="<?= APP_URL ?>/notifications">
+                                    Ver todas
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
-                    <!-- Almacenamiento -->
-                    <li class="nav-item d-flex align-items-center ms-2">
+                    <!-- Storage indicator -->
+                    <li class="nav-item d-none d-xl-flex align-items-center ms-1">
                         <?php
-                        $storageUsed = $_SESSION['storage_used'] ?? 0;
-                        $storageMax = $_SESSION['storage_max'] ?? MAX_STORAGE_PER_CLIENT;
+                        $storageUsed    = $_SESSION['storage_used'] ?? 0;
+                        $storageMax     = $_SESSION['storage_max'] ?? MAX_STORAGE_PER_CLIENT;
                         $storagePercent = $storageMax > 0 ? round(($storageUsed / $storageMax) * 100) : 0;
                         ?>
-                        <div class="storage-indicator" title="<?= formatFileSize($storageUsed) ?> de <?= formatFileSize($storageMax) ?> usado">
-                            <small class="text-white-50 me-1">Almacenamiento:</small>
-                            <div class="progress" style="width: 80px; height: 8px;">
-                                <div class="progress-bar <?= $storagePercent > 80 ? 'bg-danger' : ($storagePercent > 60 ? 'bg-warning' : 'bg-success') ?>"
-                                     style="width: <?= $storagePercent ?>%"></div>
+                        <div class="storage-indicator"
+                             title="<?= formatFileSize($storageUsed) ?> de <?= formatFileSize($storageMax) ?> usado">
+                            <small class="text-muted me-1">Almacenamiento</small>
+                            <div class="progress" style="width:72px;height:5px;">
+                                <div class="progress-bar <?= $storagePercent > 80 ? 'bg-danger' : ($storagePercent > 60 ? 'bg-warning' : '') ?>"
+                                     style="width:<?= $storagePercent ?>%"></div>
                             </div>
-                            <small class="text-white-50 ms-1"><?= $storagePercent ?>%</small>
+                            <small class="text-muted ms-1"><?= $storagePercent ?>%</small>
                         </div>
                     </li>
 
-                    <!-- Perfil -->
-                    <li class="nav-item dropdown ms-3">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="bi bi-person-circle me-1"></i>
-                            <?= sanitize($_SESSION['user_name'] ?? 'Usuario') ?>
+                    <!-- User profile dropdown -->
+                    <li class="nav-item dropdown ms-1">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                                  style="width:28px;height:28px;background:var(--primary);color:#0d0d0d;font-size:0.75rem;font-weight:700;flex-shrink:0;">
+                                <?= strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1)) ?>
+                            </span>
+                            <span class="d-none d-md-inline" style="font-size:0.84rem;">
+                                <?= sanitize($_SESSION['user_name'] ?? 'Usuario') ?>
+                            </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/profile"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
+                            <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/profile">
+                                    <i class="bi bi-person"></i>Mi Perfil
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="<?= APP_URL ?>/logout"><i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesion</a></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="<?= APP_URL ?>/logout">
+                                    <i class="bi bi-box-arrow-right"></i>Cerrar Sesion
+                                </a>
+                            </li>
                         </ul>
                     </li>
+
                 </ul>
             </div>
         </div>
@@ -132,13 +200,14 @@
 
     <!-- Main Content -->
     <main class="<?= isAuthenticated() ? 'container-fluid py-4' : '' ?>">
-        <!-- Mensajes Flash -->
+
+        <!-- Flash Messages -->
         <?php if (hasFlash()): ?>
         <div class="flash-messages">
             <?php foreach (getFlash() as $flash): ?>
             <div class="alert alert-<?= sanitize($flash['type']) ?> alert-dismissible fade show" role="alert">
                 <?= sanitize($flash['message']) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             <?php endforeach; ?>
         </div>

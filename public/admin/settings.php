@@ -12,8 +12,8 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Configuración del Sistema</h2>
-        <p class="text-muted mb-0">Ajusta los parámetros generales de la plataforma</p>
+        <h2 class="mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Configuracion del Sistema</h2>
+        <p class="text-muted mb-0">Ajusta los parametros generales de la plataforma</p>
     </div>
 </div>
 
@@ -26,14 +26,14 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
              LÍMITES DE ALMACENAMIENTO Y ARCHIVOS
         ====================================================================== -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <h6 class="mb-0"><i class="bi bi-hdd me-2 text-primary"></i>Almacenamiento y Archivos</h6>
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-hdd me-2 text-primary"></i>Almacenamiento y Archivos
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">
-                            Tamaño máximo por archivo
+                            Tamano maximo por archivo
                             <span class="text-muted small fw-normal">(bytes)</span>
                         </label>
                         <input type="number" class="form-control" name="max_file_size"
@@ -44,7 +44,7 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                     </div>
                     <div class="mb-3">
                         <label class="form-label">
-                            Almacenamiento máximo por cliente
+                            Almacenamiento maximo por cliente
                             <span class="text-muted small fw-normal">(bytes)</span>
                         </label>
                         <input type="number" class="form-control" name="max_storage_client"
@@ -54,7 +54,7 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                         </div>
                     </div>
                     <div class="mb-0">
-                        <label class="form-label">Máximo de carpetas por cliente</label>
+                        <label class="form-label">Maximo de carpetas por cliente</label>
                         <input type="number" class="form-control" name="max_folders_client"
                                value="<?= (int)$val('max_folders_client', 20) ?>" min="1" max="1000">
                     </div>
@@ -66,9 +66,9 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
              SEGURIDAD Y SESIONES
         ====================================================================== -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <h6 class="mb-0"><i class="bi bi-shield-lock me-2 text-danger"></i>Seguridad y Sesiones</h6>
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-shield-lock me-2 text-danger"></i>Seguridad y Sesiones
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -86,7 +86,7 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                     </div>
                     <div class="mb-0">
                         <label class="form-label">
-                            Duración de sesión
+                            Duracion de sesion
                             <span class="text-muted small fw-normal">(segundos)</span>
                         </label>
                         <input type="number" class="form-control" name="session_lifetime"
@@ -104,32 +104,35 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
         ====================================================================== -->
         <?php if ($limpieza): ?>
         <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 pb-0">
-                    <h6 class="mb-0"><i class="bi bi-recycle me-2 text-warning"></i>Limpieza Automática (solo lectura)</h6>
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-recycle me-2 text-warning"></i>Limpieza Automatica (solo lectura)
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-sm-4">
-                            <div class="border rounded p-3 text-center">
+                            <div class="border rounded p-3 text-center"
+                                 style="border-color:var(--border-subtle)!important;background:var(--bg-elevated);">
                                 <div class="fs-4 fw-bold text-primary"><?= (int)$limpieza['dias_conservacion'] ?></div>
-                                <div class="small text-muted">Días de conservación en papelera</div>
+                                <div class="small text-muted mt-1">Dias de conservacion en papelera</div>
                             </div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="border rounded p-3 text-center">
+                            <div class="border rounded p-3 text-center"
+                                 style="border-color:var(--border-subtle)!important;background:var(--bg-elevated);">
                                 <div class="fs-4 fw-bold text-warning"><?= (int)$limpieza['dias_inactividad'] ?></div>
-                                <div class="small text-muted">Días de inactividad para alerta</div>
+                                <div class="small text-muted mt-1">Dias de inactividad para alerta</div>
                             </div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="border rounded p-3 text-center">
+                            <div class="border rounded p-3 text-center"
+                                 style="border-color:var(--border-subtle)!important;background:var(--bg-elevated);">
                                 <?php if ($limpieza['activa']): ?>
                                 <div class="fs-4 fw-bold text-success"><i class="bi bi-check-circle"></i></div>
-                                <div class="small text-muted">Limpieza activa</div>
+                                <div class="small text-muted mt-1">Limpieza activa</div>
                                 <?php else: ?>
                                 <div class="fs-4 fw-bold text-secondary"><i class="bi bi-x-circle"></i></div>
-                                <div class="small text-muted">Limpieza desactivada</div>
+                                <div class="small text-muted mt-1">Limpieza desactivada</div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -137,7 +140,7 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                         <div class="col-12">
                             <p class="text-muted small mb-0">
                                 <i class="bi bi-clock-history me-1"></i>
-                                Última ejecución: <?= formatDate($limpieza['ultima_ejecucion'], 'd/m/Y H:i') ?>
+                                Ultima ejecucion: <?= formatDate($limpieza['ultima_ejecucion'], 'd/m/Y H:i') ?>
                             </p>
                         </div>
                         <?php endif; ?>
@@ -149,10 +152,10 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
 
     </div><!-- /row -->
 
-    <!-- Botón guardar -->
+    <!-- Boton guardar -->
     <div class="d-flex justify-content-end mt-4">
         <button type="submit" class="btn btn-primary px-4">
-            <i class="bi bi-floppy me-2"></i>Guardar Configuración
+            <i class="bi bi-floppy me-2"></i>Guardar Configuracion
         </button>
     </div>
 
@@ -160,9 +163,9 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
 
 
 <!-- Tabla de referencia de claves -->
-<div class="card border-0 shadow-sm mt-4">
-    <div class="card-header bg-transparent border-0">
-        <h6 class="mb-0"><i class="bi bi-table me-2"></i>Todas las claves de configuración</h6>
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-table me-2"></i>Todas las claves de configuracion
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -171,14 +174,14 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                     <tr>
                         <th class="ps-3">Clave</th>
                         <th>Valor</th>
-                        <th class="pe-3">Descripción</th>
+                        <th class="pe-3">Descripcion</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($config as $clave => $row): ?>
                     <tr>
                         <td class="ps-3"><code class="small"><?= sanitize($clave) ?></code></td>
-                        <td class="small"><?= sanitize($row['valor']) ?></td>
+                        <td class="small text-muted"><?= sanitize($row['valor']) ?></td>
                         <td class="small text-muted pe-3"><?= sanitize($row['descripcion'] ?? '') ?></td>
                     </tr>
                     <?php endforeach; ?>

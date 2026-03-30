@@ -11,17 +11,19 @@
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
-            <a href="<?= APP_URL ?>/?page=folders"><i class="bi bi-folder2-open me-1"></i>Mis Carpetas</a>
+            <a href="<?= APP_URL ?>/?page=folders">
+                <i class="bi bi-folder2-open me-1"></i>Mis Carpetas
+            </a>
         </li>
         <li class="breadcrumb-item active"><?= sanitize($carpeta['nombre']) ?></li>
     </ol>
 </nav>
 
-<!-- Cabecera -->
+<!-- Page header -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1">
-            <i class="bi bi-folder-fill text-warning me-2"></i><?= sanitize($carpeta['nombre']) ?>
+            <i class="bi bi-folder-fill me-2 text-primary"></i><?= sanitize($carpeta['nombre']) ?>
         </h2>
         <?php if (!empty($carpeta['descripcion'])): ?>
         <p class="text-muted mb-0"><?= sanitize($carpeta['descripcion']) ?></p>
@@ -32,12 +34,12 @@
     </button>
 </div>
 
-<!-- Archivos -->
+<!-- File list -->
 <?php if (empty($archivos)): ?>
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body text-center py-5">
-        <i class="bi bi-cloud-upload text-muted" style="font-size: 4rem;"></i>
-        <h5 class="mt-3">Esta carpeta está vacía</h5>
+        <i class="bi bi-cloud-upload text-muted" style="font-size:4rem;"></i>
+        <h5 class="mt-3">Esta carpeta esta vacia</h5>
         <p class="text-muted">Sube tu primer archivo para comenzar.</p>
         <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalSubir">
             <i class="bi bi-cloud-upload me-2"></i>Subir Archivo
@@ -46,17 +48,18 @@
 </div>
 
 <?php else: ?>
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
             <i class="bi bi-files me-2"></i><?= count($archivos) ?> archivo<?= count($archivos) != 1 ? 's' : '' ?>
-        </h6>
-        <div class="input-group" style="max-width: 250px;">
-            <span class="input-group-text bg-transparent border-end-0">
-                <i class="bi bi-search text-muted"></i>
+        </span>
+        <div class="input-group" style="max-width:240px;">
+            <span class="input-group-text" style="border-right:none;">
+                <i class="bi bi-search" style="font-size:0.8rem;"></i>
             </span>
-            <input type="text" id="buscarArchivo" class="form-control border-start-0"
-                   placeholder="Buscar archivo...">
+            <input type="text" id="buscarArchivo" class="form-control"
+                   placeholder="Buscar archivo..."
+                   style="border-left:none;font-size:0.83rem;">
         </div>
     </div>
     <div class="card-body p-0">
@@ -66,7 +69,7 @@
                     <tr>
                         <th class="ps-3">Nombre</th>
                         <th>Tipo</th>
-                        <th>Tamaño</th>
+                        <th>Tamano</th>
                         <th>Fecha</th>
                         <th class="text-end pe-3">Acciones</th>
                     </tr>
@@ -75,12 +78,14 @@
                     <?php foreach ($archivos as $archivo): ?>
                     <tr>
                         <td class="ps-3">
-                            <i class="bi <?= getFileIcon($archivo['extension']) ?> me-2 text-secondary fs-5"></i>
+                            <i class="bi <?= getFileIcon($archivo['extension']) ?> me-2 text-muted fs-5"></i>
                             <span class="fw-semibold small" title="<?= sanitize($archivo['nombre_original']) ?>">
                                 <?= sanitize(truncateText($archivo['nombre_original'], 40)) ?>
                             </span>
                             <?php if (!empty($archivo['descripcion'])): ?>
-                            <br><small class="text-muted ms-4"><?= sanitize(truncateText($archivo['descripcion'], 60)) ?></small>
+                            <br><small class="text-muted ms-4">
+                                <?= sanitize(truncateText($archivo['descripcion'], 60)) ?>
+                            </small>
                             <?php endif; ?>
                         </td>
                         <td>
@@ -88,7 +93,7 @@
                                 <?= strtoupper(sanitize($archivo['extension'])) ?>
                             </span>
                         </td>
-                        <td class="small"><?= formatFileSize($archivo['tamano_bytes']) ?></td>
+                        <td class="small text-muted"><?= formatFileSize($archivo['tamano_bytes']) ?></td>
                         <td class="small text-muted"><?= formatDate($archivo['fecha_subida']) ?></td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
@@ -125,26 +130,30 @@
                 <input type="hidden" name="carpeta_id" value="<?= $carpeta['id'] ?>">
 
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Subir Archivo</h5>
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload"></i>Subir Archivo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="archivo_file" class="form-label">Archivo <span class="text-danger">*</span></label>
+                        <label for="archivo_file" class="form-label">
+                            Archivo <span class="text-danger">*</span>
+                        </label>
                         <input type="file" class="form-control" id="archivo_file" name="archivo" required>
-                        <div class="form-text">Tamaño máximo: <?= formatFileSize(MAX_FILE_SIZE) ?></div>
+                        <div class="form-text">Tamano maximo: <?= formatFileSize(MAX_FILE_SIZE) ?></div>
                     </div>
                     <div class="mb-3">
-                        <label for="archivo_desc" class="form-label">Descripción <span class="text-muted small">(opcional)</span></label>
+                        <label for="archivo_desc" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
                         <input type="text" class="form-control" id="archivo_desc" name="descripcion"
-                               maxlength="255" placeholder="Descripción breve del archivo">
+                               maxlength="255" placeholder="Descripcion breve del archivo">
                     </div>
 
                     <!-- Barra de progreso (visible al subir) -->
                     <div id="uploadProgress" class="d-none">
-                        <div class="progress">
+                        <div class="progress" style="height:8px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                 style="width: 100%"></div>
+                                 style="width:100%"></div>
                         </div>
                         <small class="text-muted mt-1 d-block text-center">Subiendo archivo...</small>
                     </div>
@@ -152,7 +161,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnSubir">
-                        <i class="bi bi-cloud-upload me-2"></i>Subir
+                        <i class="bi bi-cloud-upload"></i>Subir
                     </button>
                 </div>
             </form>
@@ -170,20 +179,23 @@
             <form method="POST" id="formPapelera" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title text-danger"><i class="bi bi-trash me-2"></i>Mover a Papelera</h5>
+                    <h5 class="modal-title text-danger"><i class="bi bi-trash"></i>Mover a Papelera</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Mover <strong id="papelera_nombre"></strong> a la papelera?</p>
-                    <p class="text-muted small mb-0">
+                    <p style="color:var(--text-secondary);">
+                        ¿Mover <strong id="papelera_nombre" style="color:var(--text-primary);"></strong>
+                        a la papelera?
+                    </p>
+                    <p class="small mb-0 text-muted">
                         <i class="bi bi-info-circle me-1"></i>
-                        El archivo podrá recuperarse desde la papelera.
+                        El archivo podra recuperarse desde la papelera.
                     </p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-2"></i>Mover a Papelera
+                        <i class="bi bi-trash"></i>Mover a Papelera
                     </button>
                 </div>
             </form>
@@ -193,7 +205,7 @@
 
 
 <script>
-// Búsqueda en tabla de archivos
+// Busqueda en tabla de archivos
 document.getElementById('buscarArchivo')?.addEventListener('input', function () {
     const term  = this.value.toLowerCase();
     const filas = document.querySelectorAll('#tablaArchivos tbody tr');
