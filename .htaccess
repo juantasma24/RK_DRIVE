@@ -5,6 +5,9 @@
 # Habilitar el motor de reescritura
 RewriteEngine On
 
+# Evitar que Apache redirija /trash → /trash/ (conflicto con directorio fisico)
+DirectorySlash Off
+
 # Directorio base para instalacion en subdirectorio (XAMPP local)
 RewriteBase /RK_DRIVE/
 

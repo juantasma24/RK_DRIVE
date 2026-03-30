@@ -11,6 +11,11 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="<?= APP_URL ?>/public/img/favicon.ico">
 
+    <!-- Google Fonts: Poppins + Manrope -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/vendor/bootstrap/css/bootstrap.min.css">
 
@@ -19,6 +24,14 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css?v=<?= APP_VERSION ?>">
+
+    <!-- Aplicar tema guardado antes de render para evitar flash -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('rk-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 
     <!-- CSRF Token para AJAX -->
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
@@ -99,6 +112,13 @@
 
                 <!-- Right-side navigation -->
                 <ul class="navbar-nav align-items-center gap-1">
+
+                    <!-- Dark / Light toggle -->
+                    <li class="nav-item">
+                        <button id="themeToggle" class="btn-theme-toggle" title="Cambiar tema" aria-label="Cambiar tema">
+                            <i class="bi bi-sun-fill" id="themeIcon"></i>
+                        </button>
+                    </li>
 
                     <!-- Notifications -->
                     <li class="nav-item dropdown">

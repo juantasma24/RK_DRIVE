@@ -34,8 +34,8 @@
     --success:          #5ea84a;
     --info:             #3b82f6;
     --info-dim:         rgba(59, 130, 246, 0.12);
-    --font-display:     'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    --font-body:        'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-display:     'Poppins', 'Gill Sans', 'Trebuchet MS', sans-serif;
+    --font-body:        'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
     --radius-sm:        6px;
     --radius-md:        10px;
     --radius-lg:        14px;
@@ -69,8 +69,8 @@ h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
     font-family: var(--font-display);
     color: var(--text-primary);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 a {
@@ -1042,4 +1042,261 @@ code {
         width: 100%;
         justify-content: center;
     }
+}
+
+/* ============================================================
+   Light Mode — [data-theme="light"]
+   ============================================================ */
+[data-theme="light"] {
+    --bg-base:        #f2f4f6;
+    --bg-card:        #ffffff;
+    --bg-elevated:    #e8eaed;
+    --bg-input:       #ffffff;
+    --border-subtle:  rgba(0, 0, 0, 0.08);
+    --border-medium:  rgba(0, 0, 0, 0.15);
+    --border-green:   rgba(94, 168, 74, 0.35);
+    --text-primary:   #111111;
+    --text-secondary: #333333;
+    --text-muted:     #666666;
+    --text-dim:       #999999;
+    --shadow-card:    0 2px 12px rgba(0, 0, 0, 0.08);
+    --shadow-green:   0 0 20px rgba(94, 168, 74, 0.12);
+}
+
+[data-theme="light"] body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .navbar {
+    background-color: #ffffff !important;
+    border-bottom-color: var(--border-green);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] .navbar-brand img {
+    /* en light mode usar logo negro */
+    filter: invert(1) brightness(0);
+}
+
+[data-theme="light"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280,0,0,0.7%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+[data-theme="light"] .dropdown-menu {
+    background-color: #ffffff;
+    border-color: rgba(0,0,0,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+[data-theme="light"] .storage-indicator .progress {
+    background: #ddd;
+}
+
+[data-theme="light"] footer {
+    background-color: #ffffff !important;
+    border-top-color: var(--border-green) !important;
+}
+
+[data-theme="light"] .card {
+    background-color: #ffffff;
+    border-color: rgba(0,0,0,0.08) !important;
+}
+
+[data-theme="light"] .card-header {
+    border-bottom-color: rgba(0,0,0,0.08);
+    background-color: #f8f9fa;
+}
+
+[data-theme="light"] .table {
+    color: var(--text-primary);
+    border-color: rgba(0,0,0,0.07);
+}
+
+[data-theme="light"] .table > :not(caption) > * > * {
+    background-color: transparent;
+    border-bottom-color: rgba(0,0,0,0.06);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .table-hover tbody tr:hover > * {
+    background-color: rgba(94,168,74,0.06);
+}
+
+[data-theme="light"] thead.table-light th,
+[data-theme="light"] .table thead th {
+    background-color: #f1f3f5 !important;
+    color: var(--text-muted) !important;
+    border-bottom-color: rgba(0,0,0,0.1) !important;
+}
+
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select {
+    background-color: #ffffff;
+    border-color: #ced4da;
+    color: #111111;
+}
+
+[data-theme="light"] .form-control:focus,
+[data-theme="light"] .form-select:focus {
+    background-color: #ffffff;
+    border-color: var(--primary);
+    color: #111111;
+}
+
+[data-theme="light"] .input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #555;
+}
+
+[data-theme="light"] .modal-content {
+    background-color: #ffffff;
+    border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-footer {
+    border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .list-group-item {
+    background-color: transparent;
+    border-color: rgba(0,0,0,0.07);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .btn-secondary {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #333;
+}
+
+[data-theme="light"] .btn-light {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #333;
+}
+
+[data-theme="light"] .alert-warning {
+    background-color: #fff8e1;
+    border-color: #ffe082;
+    color: #795500;
+}
+
+[data-theme="light"] .login-page-wrap {
+    background-color: #e8eaed;
+}
+
+[data-theme="light"] .rk-login-card {
+    background: #ffffff;
+    border-color: var(--border-green);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: #e8eaed;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #bbb;
+}
+
+[data-theme="light"] .rk-404-wrap {
+    background: transparent;
+}
+
+[data-theme="light"] .rk-404-card {
+    background: #ffffff;
+    border-color: rgba(0,0,0,0.1);
+}
+
+/* ============================================================
+   Theme Toggle Button
+   ============================================================ */
+.btn-theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-medium);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition);
+    padding: 0;
+    font-size: 0.95rem;
+}
+
+.btn-theme-toggle:hover {
+    color: var(--primary);
+    border-color: var(--border-green);
+    background: var(--primary-dim);
+}
+
+[data-theme="light"] .btn-theme-toggle {
+    border-color: rgba(0,0,0,0.15);
+    color: #555;
+}
+
+[data-theme="light"] .btn-theme-toggle:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-dim);
+}
+
+/* ============================================================
+   Error 404 — dentro del layout
+   ============================================================ */
+.rk-404-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 180px);
+    padding: 2rem 1rem;
+}
+
+.rk-404-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 3.5rem 3rem;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: var(--shadow-card);
+}
+
+.rk-404-icon {
+    display: block;
+    font-size: 2.5rem;
+    color: var(--text-dim);
+    margin-bottom: 1rem;
+}
+
+.rk-404-code {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 6rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.04em;
+}
+
+.rk-404-card h2 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.rk-404-card p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 576px) {
+    .rk-404-code { font-size: 4.5rem; }
+    .rk-404-card { padding: 2.5rem 1.5rem; }
 }

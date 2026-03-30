@@ -320,6 +320,31 @@ document.addEventListener('DOMContentLoaded', function() {
             bsAlert.close();
         });
     }, 5000);
+
+    // Dark / Light mode toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon   = document.getElementById('themeIcon');
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('rk-theme', theme);
+        if (themeIcon) {
+            themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        }
+    }
+
+    // Inicializar icono segun tema actual
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    if (themeIcon) {
+        themeIcon.className = currentTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+        });
+    }
 });
 
 // Exponer funciones globales
