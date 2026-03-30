@@ -2,16 +2,15 @@
 
     <!-- Footer -->
     <?php if (isAuthenticated()): ?>
-    <footer class="footer mt-auto py-3 bg-light">
+    <footer class="footer mt-auto">
         <div class="container-fluid">
-            <div class="row">
+            <div class="row align-items-center">
                 <div class="col-md-6">
-                    <span class="text-muted">&copy; <?= date('Y') ?> RK Solutions - Marketing Drive v<?= APP_VERSION ?></span>
+                    <span class="text-muted">&copy; <?= date('Y') ?> RK Solutions &mdash; Marketing Drive v<?= APP_VERSION ?></span>
                 </div>
-                <div class="col-md-6 text-md-end">
+                <div class="col-md-6 text-md-end mt-1 mt-md-0">
                     <span class="text-muted small">
-                        <i class="bi bi-clock me-1"></i>
-                        Ultima actividad: <?= date('d/m/Y H:i') ?>
+                        <i class="bi bi-clock me-1"></i>Ultima actividad: <?= date('d/m/Y H:i') ?>
                     </span>
                 </div>
             </div>

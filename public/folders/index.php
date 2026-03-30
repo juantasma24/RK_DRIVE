@@ -19,7 +19,7 @@ $puedCrear     = $totalCarpetas < $limite;
         <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
     </button>
     <?php else: ?>
-    <button class="btn btn-secondary" disabled title="Has alcanzado el límite de carpetas">
+    <button class="btn btn-secondary" disabled title="Has alcanzado el limite de carpetas">
         <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
     </button>
     <?php endif; ?>
@@ -27,10 +27,10 @@ $puedCrear     = $totalCarpetas < $limite;
 
 <?php if (empty($carpetas)): ?>
 <!-- Estado vacío -->
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body text-center py-5">
-        <i class="bi bi-folder2 text-muted" style="font-size: 4rem;"></i>
-        <h5 class="mt-3">No tienes carpetas todavía</h5>
+        <i class="bi bi-folder2 text-muted" style="font-size:4rem;"></i>
+        <h5 class="mt-3">No tienes carpetas todavia</h5>
         <p class="text-muted">Crea tu primera carpeta para empezar a organizar tus archivos.</p>
         <?php if ($puedCrear): ?>
         <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrear">
@@ -45,33 +45,35 @@ $puedCrear     = $totalCarpetas < $limite;
 <div class="row g-3">
     <?php foreach ($carpetas as $carpeta): ?>
     <div class="col-sm-6 col-lg-4 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 folder-card">
+        <div class="card folder-card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>"
-                       class="text-decoration-none text-dark folder-icon">
-                        <i class="bi bi-folder-fill text-warning" style="font-size: 2.5rem;"></i>
+                       class="folder-icon text-decoration-none">
+                        <i class="bi bi-folder-fill" style="font-size:2.5rem;"></i>
                     </a>
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">
+                        <button class="btn btn-sm btn-light" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>">
-                                    <i class="bi bi-folder2-open me-2"></i>Abrir
+                                <a class="dropdown-item"
+                                   href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>">
+                                    <i class="bi bi-folder2-open"></i>Abrir
                                 </a>
                             </li>
                             <li>
-                                <button class="dropdown-item" onclick="abrirModalEditar(<?= $carpeta['id'] ?>, '<?= addslashes(sanitize($carpeta['nombre'])) ?>', '<?= addslashes(sanitize($carpeta['descripcion'] ?? '')) ?>')">
-                                    <i class="bi bi-pencil me-2"></i>Renombrar
+                                <button class="dropdown-item"
+                                        onclick="abrirModalEditar(<?= $carpeta['id'] ?>, '<?= addslashes(sanitize($carpeta['nombre'])) ?>', '<?= addslashes(sanitize($carpeta['descripcion'] ?? '')) ?>')">
+                                    <i class="bi bi-pencil"></i>Renombrar
                                 </button>
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <button class="dropdown-item text-danger"
                                         onclick="confirmarEliminar(<?= $carpeta['id'] ?>, '<?= addslashes(sanitize($carpeta['nombre'])) ?>', <?= (int)$carpeta['total_archivos'] ?>)">
-                                    <i class="bi bi-trash me-2"></i>Eliminar
+                                    <i class="bi bi-trash"></i>Eliminar
                                 </button>
                             </li>
                         </ul>
@@ -79,28 +81,28 @@ $puedCrear     = $totalCarpetas < $limite;
                 </div>
 
                 <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>"
-                   class="text-decoration-none text-dark">
+                   class="text-decoration-none">
                     <h6 class="card-title mb-1 text-truncate" title="<?= sanitize($carpeta['nombre']) ?>">
                         <?= sanitize($carpeta['nombre']) ?>
                     </h6>
                 </a>
 
                 <?php if (!empty($carpeta['descripcion'])): ?>
-                <p class="card-text text-muted small mb-2 text-truncate" title="<?= sanitize($carpeta['descripcion']) ?>">
+                <p class="card-text text-muted small mb-2 text-truncate"
+                   title="<?= sanitize($carpeta['descripcion']) ?>">
                     <?= sanitize($carpeta['descripcion']) ?>
                 </p>
                 <?php endif; ?>
 
-                <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-2"
+                     style="border-top:1px solid var(--border-subtle);">
                     <span class="small text-muted">
                         <i class="bi bi-file-earmark me-1"></i><?= $carpeta['total_archivos'] ?> archivo<?= $carpeta['total_archivos'] != 1 ? 's' : '' ?>
                     </span>
-                    <span class="small text-muted">
-                        <?= formatFileSize($carpeta['tamano_total']) ?>
-                    </span>
+                    <span class="small text-muted"><?= formatFileSize($carpeta['tamano_total']) ?></span>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0 pt-0">
+            <div class="card-footer border-0 pt-0">
                 <small class="text-muted">
                     <i class="bi bi-calendar3 me-1"></i><?= formatDate($carpeta['fecha_creacion'], 'd/m/Y') ?>
                 </small>
@@ -121,25 +123,30 @@ $puedCrear     = $totalCarpetas < $limite;
             <form method="POST" action="<?= APP_URL ?>/?page=folders&action=create">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-folder-plus me-2"></i>Nueva Carpeta</h5>
+                    <h5 class="modal-title"><i class="bi bi-folder-plus"></i>Nueva Carpeta</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="crear_nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <label for="crear_nombre" class="form-label">
+                            Nombre <span class="text-danger">*</span>
+                        </label>
                         <input type="text" class="form-control" id="crear_nombre" name="nombre"
-                               maxlength="255" required autofocus placeholder="Ej: Campañas 2024">
+                               maxlength="255" required autofocus placeholder="Ej: Campanas 2024">
                     </div>
-                    <div class="mb-3">
-                        <label for="crear_desc" class="form-label">Descripción <span class="text-muted small">(opcional)</span></label>
+                    <div class="mb-0">
+                        <label for="crear_desc" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
                         <textarea class="form-control" id="crear_desc" name="descripcion"
-                                  rows="2" maxlength="500" placeholder="Breve descripción de la carpeta"></textarea>
+                                  rows="2" maxlength="500"
+                                  placeholder="Breve descripcion de la carpeta"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-folder-plus me-2"></i>Crear Carpeta
+                        <i class="bi bi-folder-plus"></i>Crear Carpeta
                     </button>
                 </div>
             </form>
@@ -157,17 +164,21 @@ $puedCrear     = $totalCarpetas < $limite;
             <form method="POST" id="formEditar" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Renombrar Carpeta</h5>
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i>Renombrar Carpeta</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="editar_nombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <label for="editar_nombre" class="form-label">
+                            Nombre <span class="text-danger">*</span>
+                        </label>
                         <input type="text" class="form-control" id="editar_nombre" name="nombre"
                                maxlength="255" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="editar_desc" class="form-label">Descripción <span class="text-muted small">(opcional)</span></label>
+                    <div class="mb-0">
+                        <label for="editar_desc" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
                         <textarea class="form-control" id="editar_desc" name="descripcion"
                                   rows="2" maxlength="500"></textarea>
                     </div>
@@ -175,7 +186,7 @@ $puedCrear     = $totalCarpetas < $limite;
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-2"></i>Guardar Cambios
+                        <i class="bi bi-check-lg"></i>Guardar Cambios
                     </button>
                 </div>
             </form>
@@ -193,11 +204,14 @@ $puedCrear     = $totalCarpetas < $limite;
             <form method="POST" id="formEliminar" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title text-danger"><i class="bi bi-trash me-2"></i>Eliminar Carpeta</h5>
+                    <h5 class="modal-title text-danger"><i class="bi bi-trash"></i>Eliminar Carpeta</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>¿Estás seguro de que deseas eliminar la carpeta <strong id="eliminar_nombre"></strong>?</p>
+                    <p style="color:var(--text-secondary);">
+                        ¿Estas seguro de que deseas eliminar la carpeta
+                        <strong id="eliminar_nombre" style="color:var(--text-primary);"></strong>?
+                    </p>
                     <div id="eliminar_aviso_archivos" class="alert alert-warning d-none">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         Esta carpeta tiene archivos. Debes moverlos o eliminarlos antes de borrar la carpeta.
@@ -206,7 +220,7 @@ $puedCrear     = $totalCarpetas < $limite;
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger" id="btn_confirmar_eliminar">
-                        <i class="bi bi-trash me-2"></i>Eliminar
+                        <i class="bi bi-trash"></i>Eliminar
                     </button>
                 </div>
             </form>
@@ -214,13 +228,6 @@ $puedCrear     = $totalCarpetas < $limite;
     </div>
 </div>
 
-
-<style>
-.folder-card { transition: transform 0.15s, box-shadow 0.15s; }
-.folder-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1) !important; }
-.folder-icon i { transition: transform 0.15s; }
-.folder-icon:hover i { transform: scale(1.1); }
-</style>
 
 <script>
 function abrirModalEditar(id, nombre, descripcion) {
@@ -236,7 +243,7 @@ function confirmarEliminar(id, nombre, totalArchivos) {
         '<?= APP_URL ?>/?page=folders&action=delete&id=' + id;
     document.getElementById('eliminar_nombre').textContent = '"' + nombre + '"';
 
-    const aviso = document.getElementById('eliminar_aviso_archivos');
+    const aviso       = document.getElementById('eliminar_aviso_archivos');
     const btnConfirmar = document.getElementById('btn_confirmar_eliminar');
 
     if (totalArchivos > 0) {
