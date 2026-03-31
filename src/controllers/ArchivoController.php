@@ -19,6 +19,7 @@ class ArchivoController {
         switch ($action) {
             case 'upload':   return $this->upload();
             case 'download': return $this->download((int)$id);
+            case 'preview':  return $this->preview((int)$id);
             case 'trash':    return $this->moveToTrash((int)$id);
             case 'restore':  return $this->restore((int)$id);
             case 'delete':   return $this->delete((int)$id);
@@ -161,6 +162,50 @@ class ArchivoController {
         ob_clean();
         flush();
         readfile($archivo->getRutaFisica());
+        exit;
+    }
+
+    // =========================================================================
+    // PREVISUALIZAR (inline, sin descarga)
+    // =========================================================================
+
+    public function preview($id) {
+        $userId  = getCurrentUserId();
+        $archivo = em()->find(\App\Entity\Archivo::class, $id);
+
+        // Debe existir y pertenecer al usuario (o ser admin)
+        if (!$archivo || (!isAdmin() && $archivo->getUsuario()->getId() !== $userId)) {
+            http_response_code(403);
+            exit;
+        }
+
+        $ext = strtolower($archivo->getExtension());
+        $previewable = [
+            'jpg','jpeg','png','gif','webp','svg','bmp',
+            'mp4','webm',
+            'mp3','wav','ogg','aac','m4a',
+            'pdf',
+            'txt','csv',
+        ];
+
+        if (!in_array($ext, $previewable)) {
+            http_response_code(415);
+            exit;
+        }
+
+        $rutaFisica = $archivo->getRutaFisica();
+        if (!file_exists($rutaFisica)) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: ' . $archivo->getTipoMime());
+        header('Content-Disposition: inline; filename="' . rawurlencode($archivo->getNombreOriginal()) . '"');
+        header('Content-Length: ' . $archivo->getTamanoBytes());
+        header('Cache-Control: private, max-age=3600');
+        ob_clean();
+        flush();
+        readfile($rutaFisica);
         exit;
     }
 

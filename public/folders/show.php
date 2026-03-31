@@ -5,13 +5,26 @@
  * @var array $carpeta   Datos de la carpeta
  * @var array $archivos  Archivos activos dentro de la carpeta
  */
+
+$previewBase = APP_URL . '/?page=files&action=preview&id=';
+
+// Clasifica el tipo de previsualización por extensión
+function previewType(string $ext): string {
+    $ext = strtolower($ext);
+    if (in_array($ext, ['jpg','jpeg','png','gif','webp','svg','bmp'])) return 'image';
+    if (in_array($ext, ['mp4','webm']))                                return 'video';
+    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))               return 'audio';
+    if ($ext === 'pdf')                                                return 'pdf';
+    if (in_array($ext, ['txt','csv']))                                 return 'text';
+    return 'none';
+}
 ?>
 
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
-            <a href="<?= APP_URL ?>/?page=folders">
+            <a href="<?= APP_URL ?>/?page=folders" style="color:var(--color-primary);">
                 <i class="bi bi-folder2-open me-1"></i>Mis Carpetas
             </a>
         </li>
@@ -34,7 +47,6 @@
     </button>
 </div>
 
-<!-- File list -->
 <?php if (empty($archivos)): ?>
 <div class="card">
     <div class="card-body text-center py-5">
@@ -48,20 +60,61 @@
 </div>
 
 <?php else: ?>
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>
-            <i class="bi bi-files me-2"></i><?= count($archivos) ?> archivo<?= count($archivos) != 1 ? 's' : '' ?>
-        </span>
-        <div class="input-group" style="max-width:240px;">
-            <span class="input-group-text" style="border-right:none;">
-                <i class="bi bi-search" style="font-size:0.8rem;"></i>
+
+<!-- Barra de controles -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+
+            <!-- Contador -->
+            <span class="text-muted small me-1">
+                <i class="bi bi-files me-1"></i>
+                <span id="contadorArchivos"><?= count($archivos) ?></span>
+                archivo<?= count($archivos) != 1 ? 's' : '' ?>
             </span>
-            <input type="text" id="buscarArchivo" class="form-control"
-                   placeholder="Buscar archivo..."
-                   style="border-left:none;font-size:0.83rem;">
+
+            <!-- Ordenar -->
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Ordenar:</span>
+                <button class="btn btn-sm btn-outline-secondary sort-btn active-sort" data-sort="nombre">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Nombre
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn" data-sort="tipo">
+                    <i class="bi bi-funnel me-1"></i>Tipo
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn" data-sort="fecha">
+                    <i class="bi bi-calendar me-1"></i>Fecha
+                </button>
+            </div>
+
+            <!-- Spacer -->
+            <div class="flex-grow-1"></div>
+
+            <!-- Buscar -->
+            <div class="input-group input-group-sm" style="max-width:200px;">
+                <span class="input-group-text"><i class="bi bi-search" style="font-size:.8rem;"></i></span>
+                <input type="text" id="buscarArchivo" class="form-control"
+                       placeholder="Buscar..." style="font-size:.83rem;">
+            </div>
+
+            <!-- Toggle vista -->
+            <div class="btn-group btn-group-sm" role="group" aria-label="Vista">
+                <button id="btnVistLista" class="btn btn-outline-secondary active" title="Vista lista">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <button id="btnVistaGrid" class="btn btn-outline-secondary" title="Vista cuadricula">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </button>
+            </div>
+
         </div>
     </div>
+</div>
+
+<!-- =====================================================================
+     VISTA LISTA
+====================================================================== -->
+<div id="vistaLista" class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle" id="tablaArchivos">
@@ -75,34 +128,45 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($archivos as $archivo): ?>
-                    <tr>
+                    <?php foreach ($archivos as $a):
+                        $pt = previewType($a['extension']);
+                    ?>
+                    <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+                        data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+                        data-fecha="<?= $a['fecha_subida'] ?>">
                         <td class="ps-3">
-                            <i class="bi <?= getFileIcon($archivo['extension']) ?> me-2 text-muted fs-5"></i>
-                            <span class="fw-semibold small" title="<?= sanitize($archivo['nombre_original']) ?>">
-                                <?= sanitize(truncateText($archivo['nombre_original'], 40)) ?>
+                            <i class="bi <?= getFileIcon($a['extension']) ?> me-2 text-muted fs-5"></i>
+                            <span class="fw-semibold small" title="<?= sanitize($a['nombre_original']) ?>">
+                                <?= sanitize(truncateText($a['nombre_original'], 40)) ?>
                             </span>
-                            <?php if (!empty($archivo['descripcion'])): ?>
+                            <?php if (!empty($a['descripcion'])): ?>
                             <br><small class="text-muted ms-4">
-                                <?= sanitize(truncateText($archivo['descripcion'], 60)) ?>
+                                <?= sanitize(truncateText($a['descripcion'], 60)) ?>
                             </small>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <span class="badge bg-<?= getFileColor($archivo['extension']) ?>-subtle text-<?= getFileColor($archivo['extension']) ?> border border-<?= getFileColor($archivo['extension']) ?>-subtle">
-                                <?= strtoupper(sanitize($archivo['extension'])) ?>
+                            <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?> border border-<?= getFileColor($a['extension']) ?>-subtle">
+                                <?= strtoupper(sanitize($a['extension'])) ?>
                             </span>
                         </td>
-                        <td class="small text-muted"><?= formatFileSize($archivo['tamano_bytes']) ?></td>
-                        <td class="small text-muted"><?= formatDate($archivo['fecha_subida']) ?></td>
+                        <td class="small text-muted"><?= formatFileSize($a['tamano_bytes']) ?></td>
+                        <td class="small text-muted"><?= formatDate($a['fecha_subida']) ?></td>
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm">
-                                <a href="<?= APP_URL ?>/?page=files&action=download&id=<?= $archivo['id'] ?>"
+                                <?php if ($pt !== 'none'): ?>
+                                <button class="btn btn-outline-secondary"
+                                        onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                                        title="Vista previa">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <?php endif; ?>
+                                <a href="<?= APP_URL ?>/?page=files&action=download&id=<?= $a['id'] ?>"
                                    class="btn btn-outline-primary" title="Descargar">
                                     <i class="bi bi-download"></i>
                                 </a>
                                 <button class="btn btn-outline-danger"
-                                        onclick="confirmarMoverPapelera(<?= $archivo['id'] ?>, '<?= addslashes(sanitize($archivo['nombre_original'])) ?>')"
+                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>')"
                                         title="Mover a papelera">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -115,7 +179,118 @@
         </div>
     </div>
 </div>
+
+<!-- =====================================================================
+     VISTA CUADRÍCULA
+====================================================================== -->
+<div id="vistaGrid" class="d-none">
+    <div class="row g-3" id="gridArchivos">
+        <?php foreach ($archivos as $a):
+            $pt        = previewType($a['extension']);
+            $esImagen  = ($pt === 'image');
+        ?>
+        <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item"
+             data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+             data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+             data-fecha="<?= $a['fecha_subida'] ?>">
+            <div class="card h-100 file-card">
+
+                <!-- Thumbnail / Icono -->
+                <div class="file-card-thumb d-flex align-items-center justify-content-center"
+                     style="height:120px;overflow:hidden;border-radius:.5rem .5rem 0 0;
+                            background:var(--surface-2,#1e1e1e);cursor:<?= $pt !== 'none' ? 'pointer' : 'default' ?>;"
+                     <?php if ($pt !== 'none'): ?>
+                     onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                     title="Vista previa"
+                     <?php endif; ?>>
+                    <?php if ($esImagen): ?>
+                        <img src="<?= $previewBase . $a['id'] ?>"
+                             alt="<?= sanitize($a['nombre_original']) ?>"
+                             style="width:100%;height:120px;object-fit:cover;"
+                             loading="lazy"
+                             onerror="this.parentElement.innerHTML='<i class=\'bi <?= getFileIcon($a['extension']) ?> text-muted\' style=\'font-size:3rem;\'></i>'">
+                    <?php else: ?>
+                        <i class="bi <?= getFileIcon($a['extension']) ?> text-muted"
+                           style="font-size:3rem;"></i>
+                        <?php if ($pt !== 'none'): ?>
+                        <div class="position-absolute" style="top:8px;right:8px;">
+                            <span class="badge bg-dark bg-opacity-75">
+                                <i class="bi bi-eye-fill" style="font-size:.65rem;"></i>
+                            </span>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card-body p-2">
+                    <p class="mb-1 small fw-semibold text-truncate"
+                       title="<?= sanitize($a['nombre_original']) ?>"
+                       style="color:var(--text-primary);font-size:.78rem;">
+                        <?= sanitize(truncateText($a['nombre_original'], 28)) ?>
+                    </p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?>"
+                              style="font-size:.65rem;">
+                            <?= strtoupper(sanitize($a['extension'])) ?>
+                        </span>
+                        <span class="text-muted" style="font-size:.68rem;">
+                            <?= formatFileSize($a['tamano_bytes']) ?>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-footer p-1 d-flex gap-1 justify-content-end">
+                    <?php if ($pt !== 'none'): ?>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                            title="Vista previa">
+                        <i class="bi bi-eye" style="font-size:.75rem;"></i>
+                    </button>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/?page=files&action=download&id=<?= $a['id'] ?>"
+                       class="btn btn-sm btn-outline-primary py-0 px-2" title="Descargar">
+                        <i class="bi bi-download" style="font-size:.75rem;"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                            title="Mover a papelera">
+                        <i class="bi bi-trash" style="font-size:.75rem;"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
 <?php endif; ?>
+
+
+<!-- =====================================================================
+     MODAL: VISTA PREVIA
+====================================================================== -->
+<div class="modal fade" id="modalPreview" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-truncate me-3" id="previewNombre" style="max-width:70%;"></h6>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <a id="previewDescargar" href="#" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>Descargar
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 text-center" id="previewBody"
+                 style="min-height:300px;max-height:80vh;overflow:auto;
+                        background:var(--surface-1,#141414);display:flex;
+                        align-items:center;justify-content:center;">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <!-- =====================================================================
@@ -130,7 +305,7 @@
                 <input type="hidden" name="carpeta_id" value="<?= $carpeta['id'] ?>">
 
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-cloud-upload"></i>Subir Archivo</h5>
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Subir Archivo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -148,8 +323,6 @@
                         <input type="text" class="form-control" id="archivo_desc" name="descripcion"
                                maxlength="255" placeholder="Descripcion breve del archivo">
                     </div>
-
-                    <!-- Barra de progreso (visible al subir) -->
                     <div id="uploadProgress" class="d-none">
                         <div class="progress" style="height:8px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated"
@@ -161,7 +334,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnSubir">
-                        <i class="bi bi-cloud-upload"></i>Subir
+                        <i class="bi bi-cloud-upload me-1"></i>Subir
                     </button>
                 </div>
             </form>
@@ -179,7 +352,9 @@
             <form method="POST" id="formPapelera" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
-                    <h5 class="modal-title text-danger"><i class="bi bi-trash"></i>Mover a Papelera</h5>
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-trash me-2"></i>Mover a Papelera
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -195,7 +370,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i>Mover a Papelera
+                        <i class="bi bi-trash me-1"></i>Mover a Papelera
                     </button>
                 </div>
             </form>
@@ -205,26 +380,230 @@
 
 
 <script>
-// Busqueda en tabla de archivos
-document.getElementById('buscarArchivo')?.addEventListener('input', function () {
-    const term  = this.value.toLowerCase();
-    const filas = document.querySelectorAll('#tablaArchivos tbody tr');
-    filas.forEach(fila => {
-        fila.style.display = fila.textContent.toLowerCase().includes(term) ? '' : 'none';
+const APP_URL   = '<?= APP_URL ?>';
+let sortDir     = { nombre: 'asc', tipo: 'asc', fecha: 'desc' };
+let sortActual  = 'nombre';
+let vistaActual = localStorage.getItem('rk-view-files') || 'lista';
+
+// ── Inicializar vista ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    aplicarVista(vistaActual);
+    aplicarOrden(sortActual, false);
+});
+
+// ── Toggle lista / grid ───────────────────────────────────────────────────
+document.getElementById('btnVistLista')?.addEventListener('click', function () {
+    aplicarVista('lista');
+});
+document.getElementById('btnVistaGrid')?.addEventListener('click', function () {
+    aplicarVista('grid');
+});
+
+function aplicarVista(vista) {
+    vistaActual = vista;
+    localStorage.setItem('rk-view-files', vista);
+    const lista = document.getElementById('vistaLista');
+    const grid  = document.getElementById('vistaGrid');
+    const btnL  = document.getElementById('btnVistLista');
+    const btnG  = document.getElementById('btnVistaGrid');
+    if (!lista || !grid) return;
+
+    if (vista === 'grid') {
+        lista.classList.add('d-none');
+        grid.classList.remove('d-none');
+        btnL?.classList.remove('active');
+        btnG?.classList.add('active');
+    } else {
+        grid.classList.add('d-none');
+        lista.classList.remove('d-none');
+        btnG?.classList.remove('active');
+        btnL?.classList.add('active');
+    }
+}
+
+// ── Ordenar ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const campo = this.dataset.sort;
+        if (sortActual === campo) {
+            sortDir[campo] = sortDir[campo] === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortActual = campo;
+        }
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active-sort'));
+        this.classList.add('active-sort');
+        aplicarOrden(campo, true);
     });
 });
 
-// Modal mover a papelera
+function aplicarOrden(campo, conIcono) {
+    const dir = sortDir[campo];
+
+    // Ordenar filas de la tabla
+    const tbody = document.querySelector('#tablaArchivos tbody');
+    if (tbody) {
+        const filas = Array.from(tbody.querySelectorAll('tr'));
+        filas.sort((a, b) => comparar(a.dataset[campo], b.dataset[campo], dir));
+        filas.forEach(f => tbody.appendChild(f));
+    }
+
+    // Ordenar cards del grid
+    const grid = document.getElementById('gridArchivos');
+    if (grid) {
+        const items = Array.from(grid.querySelectorAll('.grid-item'));
+        items.sort((a, b) => comparar(a.dataset[campo], b.dataset[campo], dir));
+        items.forEach(i => grid.appendChild(i));
+    }
+
+    // Actualizar icono del botón activo
+    if (conIcono) {
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            const icons = { asc: 'bi-sort-alpha-down', desc: 'bi-sort-alpha-up' };
+            if (btn.dataset.sort === campo) {
+                const i = btn.querySelector('i');
+                if (i) i.className = 'bi ' + (dir === 'asc' ? icons.asc : icons.desc) + ' me-1';
+            }
+        });
+    }
+}
+
+function comparar(a, b, dir) {
+    a = (a || '').toLowerCase();
+    b = (b || '').toLowerCase();
+    const result = a < b ? -1 : a > b ? 1 : 0;
+    return dir === 'asc' ? result : -result;
+}
+
+// ── Búsqueda ──────────────────────────────────────────────────────────────
+document.getElementById('buscarArchivo')?.addEventListener('input', function () {
+    const term    = this.value.toLowerCase();
+    let visibles  = 0;
+
+    // Tabla
+    document.querySelectorAll('#tablaArchivos tbody tr').forEach(fila => {
+        const match = fila.textContent.toLowerCase().includes(term);
+        fila.style.display = match ? '' : 'none';
+        if (match) visibles++;
+    });
+
+    // Grid
+    document.querySelectorAll('#gridArchivos .grid-item').forEach(item => {
+        const match = item.textContent.toLowerCase().includes(term);
+        item.style.display = match ? '' : 'none';
+    });
+
+    const contador = document.getElementById('contadorArchivos');
+    if (contador) contador.textContent = term ? visibles : <?= count($archivos) ?>;
+});
+
+// ── Vista previa ──────────────────────────────────────────────────────────
+function abrirPreview(id, nombre, tipo) {
+    const url  = APP_URL + '/?page=files&action=preview&id=' + id;
+    const dlUrl = APP_URL + '/?page=files&action=download&id=' + id;
+    const body = document.getElementById('previewBody');
+    const title = document.getElementById('previewNombre');
+    const dl   = document.getElementById('previewDescargar');
+
+    title.textContent = nombre;
+    dl.href = dlUrl;
+    body.innerHTML = '<div class="p-4 text-muted"><i class="bi bi-hourglass-split me-2"></i>Cargando...</div>';
+
+    let contenido = '';
+
+    switch (tipo) {
+        case 'image':
+            contenido = `<img src="${url}" alt="${nombre}"
+                              style="max-width:100%;max-height:78vh;object-fit:contain;display:block;margin:auto;"
+                              onerror="this.replaceWith(errorPreview())">`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'video':
+            contenido = `<video controls autoplay
+                                style="max-width:100%;max-height:78vh;display:block;margin:auto;">
+                            <source src="${url}">
+                            Tu navegador no soporta este formato de video.
+                         </video>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'audio':
+            contenido = `<div class="p-5 w-100">
+                            <i class="bi bi-music-note-beamed text-primary" style="font-size:4rem;display:block;text-align:center;margin-bottom:1.5rem;"></i>
+                            <audio controls autoplay style="width:100%;max-width:500px;display:block;margin:auto;">
+                                <source src="${url}">
+                                Tu navegador no soporta este formato de audio.
+                            </audio>
+                         </div>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'pdf':
+            contenido = `<iframe src="${url}" style="width:100%;height:78vh;border:none;display:block;"></iframe>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'text':
+            fetch(url)
+                .then(r => {
+                    if (!r.ok) throw new Error('Error ' + r.status);
+                    return r.text();
+                })
+                .then(texto => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = texto;
+                    pre.style.cssText = 'text-align:left;padding:1.5rem;margin:0;width:100%;' +
+                                        'max-height:78vh;overflow:auto;font-size:.83rem;' +
+                                        'background:var(--surface-1,#141414);color:var(--text-primary,#e0e0e0);' +
+                                        'white-space:pre-wrap;word-break:break-word;';
+                    body.innerHTML = '';
+                    body.appendChild(pre);
+                })
+                .catch(() => { body.innerHTML = errorPreview(); });
+            break;
+    }
+
+    new bootstrap.Modal(document.getElementById('modalPreview')).show();
+}
+
+function errorPreview() {
+    const div = document.createElement('div');
+    div.className = 'p-4 text-muted';
+    div.innerHTML = '<i class="bi bi-exclamation-circle me-2 text-warning"></i>No se pudo cargar la vista previa.';
+    return div;
+}
+
+// Limpiar recursos al cerrar el modal
+document.getElementById('modalPreview')?.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('previewBody').innerHTML = '';
+});
+
+// ── Mover a papelera ──────────────────────────────────────────────────────
 function confirmarMoverPapelera(id, nombre) {
     document.getElementById('formPapelera').action =
-        '<?= APP_URL ?>/?page=files&action=trash&id=' + id;
+        APP_URL + '/?page=files&action=trash&id=' + id;
     document.getElementById('papelera_nombre').textContent = '"' + nombre + '"';
     new bootstrap.Modal(document.getElementById('modalPapelera')).show();
 }
 
-// Mostrar progreso al subir
+// ── Progreso de subida ────────────────────────────────────────────────────
 document.getElementById('formSubir')?.addEventListener('submit', function () {
     document.getElementById('uploadProgress').classList.remove('d-none');
     document.getElementById('btnSubir').disabled = true;
 });
 </script>
+
+<style>
+.active-sort {
+    background: var(--color-primary, #5ea84a) !important;
+    color: #0d0d0d !important;
+    border-color: var(--color-primary, #5ea84a) !important;
+}
+.file-card {
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.file-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+</style>

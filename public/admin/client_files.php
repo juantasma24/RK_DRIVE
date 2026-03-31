@@ -9,6 +9,16 @@
  * @var string              $enPapeleraFiltro Valor raw del filtro en_papelera ('')
  */
 $totalArchivos = count($archivos);
+
+function previewTypeAdmin(string $ext): string {
+    $ext = strtolower($ext);
+    if (in_array($ext, ['jpg','jpeg','png','gif','webp','svg','bmp'])) return 'image';
+    if (in_array($ext, ['mp4','webm']))                                return 'video';
+    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))               return 'audio';
+    if ($ext === 'pdf')                                                return 'pdf';
+    if (in_array($ext, ['txt','csv']))                                 return 'text';
+    return 'none';
+}
 $activos       = array_filter($archivos, fn($a) => !$a['en_papelera']);
 $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
 $totalBytes    = array_sum(array_column($archivos, 'tamano_bytes'));
@@ -191,7 +201,9 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($archivos as $a): ?>
+                    <?php foreach ($archivos as $a):
+                        $ptAdmin = previewTypeAdmin($a['extension']);
+                    ?>
                     <tr>
                         <td class="ps-3">
                             <div class="d-flex align-items-center gap-2">
@@ -224,6 +236,14 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                         </td>
                         <td class="text-end pe-3">
                             <div class="d-flex justify-content-end gap-1">
+                                <!-- Vista previa -->
+                                <?php if ($ptAdmin !== 'none'): ?>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptAdmin ?>')"
+                                        title="Vista previa">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <?php endif; ?>
                                 <!-- Descargar -->
                                 <a href="<?= APP_URL ?>/?page=admin/clients&action=download&id=<?= $a['id'] ?>"
                                    class="btn btn-sm btn-outline-secondary"
@@ -259,6 +279,31 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
     </div>
 </div>
 <?php endif; ?>
+
+
+<!-- =====================================================================
+     MODAL: VISTA PREVIA (Admin)
+====================================================================== -->
+<div class="modal fade" id="modalPreviewAdmin" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-truncate me-3" id="previewAdminNombre" style="max-width:70%;"></h6>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <a id="previewAdminDescargar" href="#" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>Descargar
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 text-center" id="previewAdminBody"
+                 style="min-height:300px;max-height:80vh;overflow:auto;
+                        background:var(--surface-1,#141414);display:flex;
+                        align-items:center;justify-content:center;">
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <!-- =====================================================================
@@ -333,6 +378,60 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
 
 
 <script>
+const APP_URL_ADMIN = '<?= APP_URL ?>';
+
+function abrirPreviewAdmin(id, nombre, tipo) {
+    const url   = APP_URL_ADMIN + '/?page=files&action=preview&id=' + id;
+    const dlUrl = APP_URL_ADMIN + '/?page=admin/clients&action=download&id=' + id;
+    const body  = document.getElementById('previewAdminBody');
+    const title = document.getElementById('previewAdminNombre');
+    const dl    = document.getElementById('previewAdminDescargar');
+
+    title.textContent = nombre;
+    dl.href = dlUrl;
+    body.innerHTML = '<div class="p-4 text-muted"><i class="bi bi-hourglass-split me-2"></i>Cargando...</div>';
+
+    switch (tipo) {
+        case 'image':
+            body.innerHTML = `<img src="${url}" alt="${nombre}"
+                style="max-width:100%;max-height:78vh;object-fit:contain;display:block;margin:auto;">`;
+            break;
+        case 'video':
+            body.innerHTML = `<video controls autoplay style="max-width:100%;max-height:78vh;display:block;margin:auto;">
+                <source src="${url}">Tu navegador no soporta este formato.</video>`;
+            break;
+        case 'audio':
+            body.innerHTML = `<div class="p-5 w-100">
+                <i class="bi bi-music-note-beamed text-primary" style="font-size:4rem;display:block;text-align:center;margin-bottom:1.5rem;"></i>
+                <audio controls autoplay style="width:100%;max-width:500px;display:block;margin:auto;">
+                    <source src="${url}">Tu navegador no soporta este formato.</audio></div>`;
+            break;
+        case 'pdf':
+            body.innerHTML = `<iframe src="${url}" style="width:100%;height:78vh;border:none;display:block;"></iframe>`;
+            break;
+        case 'text':
+            fetch(url)
+                .then(r => { if (!r.ok) throw new Error(); return r.text(); })
+                .then(texto => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = texto;
+                    pre.style.cssText = 'text-align:left;padding:1.5rem;margin:0;width:100%;max-height:78vh;' +
+                        'overflow:auto;font-size:.83rem;background:var(--surface-1,#141414);' +
+                        'color:var(--text-primary,#e0e0e0);white-space:pre-wrap;word-break:break-word;';
+                    body.innerHTML = '';
+                    body.appendChild(pre);
+                })
+                .catch(() => { body.innerHTML = '<div class="p-4 text-muted"><i class="bi bi-exclamation-circle me-2 text-warning"></i>No se pudo cargar la vista previa.</div>'; });
+            break;
+    }
+
+    new bootstrap.Modal(document.getElementById('modalPreviewAdmin')).show();
+}
+
+document.getElementById('modalPreviewAdmin')?.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('previewAdminBody').innerHTML = '';
+});
+
 function abrirModalEditar(id, nombre, descripcion) {
     document.getElementById('formEditar').action =
         '<?= APP_URL ?>/?page=admin/clients&action=edit&id=' + id;
