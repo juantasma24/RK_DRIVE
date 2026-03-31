@@ -9,7 +9,7 @@
 <div class="login-container">
     <div class="login-card">
         <div class="login-header">
-            <img src="<?= APP_URL ?>/public/img/logos/logo_rk_negro.svg" alt="RK Drive">
+            <img src="<?= APP_URL ?>/public/img/logos/logo_rk_blanco.svg" alt="RK Drive">
         </div>
 
         <div class="login-body">

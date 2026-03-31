@@ -49,7 +49,7 @@ define('APP_URL', 'http://localhost/RK_DRIVE');
 define('APP_NAME', 'RK Marketing Drive');
 
 // Version de la aplicacion
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.2.0');
 
 //=============================================================================
 // CONFIGURACION DE SESION
@@ -85,7 +85,7 @@ define('ALLOWED_EXTENSIONS', json_encode([
     // Imagenes
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico',
     // Documentos
-    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'txt', 'csv',
     // Video
     'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv',
     // Audio
@@ -99,6 +99,7 @@ define('ALLOWED_MIME_TYPES', json_encode([
     // Imagenes
     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/x-icon',
     // Documentos
+    'text/plain', 'text/csv',
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

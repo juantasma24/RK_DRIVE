@@ -182,6 +182,16 @@ function validateUploadedFile($file, $maxSize = null) {
     $realMime = getMimeType($file['tmp_name']);
     $allowedMimes = json_decode(ALLOWED_MIME_TYPES, true);
 
+    // En Windows/XAMPP, finfo puede devolver application/octet-stream para archivos de texto.
+    // Si el MIME detectado es generico, usar el MIME por extension como fallback.
+    if ($realMime === 'application/octet-stream') {
+        $extForMime = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $fallbackMime = getMimeTypeByExtension($extForMime);
+        if ($fallbackMime !== 'application/octet-stream') {
+            $realMime = $fallbackMime;
+        }
+    }
+
     if (!in_array($realMime, $allowedMimes)) {
         $errors[] = 'Tipo de archivo no permitido.';
     }
@@ -235,6 +245,16 @@ function getMimeType($filepath) {
 
     // Fallback basico por extension
     $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    return getMimeTypeByExtension($ext);
+}
+
+/**
+ * Devuelve el tipo MIME por extension de archivo
+ *
+ * @param string $ext Extension sin punto
+ * @return string Tipo MIME
+ */
+function getMimeTypeByExtension($ext) {
     $mimeTypes = [
         'jpg' => 'image/jpeg',
         'jpeg' => 'image/jpeg',
@@ -242,14 +262,38 @@ function getMimeType($filepath) {
         'gif' => 'image/gif',
         'webp' => 'image/webp',
         'svg' => 'image/svg+xml',
+        'bmp' => 'image/bmp',
+        'ico' => 'image/x-icon',
         'pdf' => 'application/pdf',
         'doc' => 'application/msword',
         'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'xls' => 'application/vnd.ms-excel',
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'odt' => 'application/vnd.oasis.opendocument.text',
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+        'odp' => 'application/vnd.oasis.opendocument.presentation',
+        'txt' => 'text/plain',
+        'csv' => 'text/csv',
         'mp4' => 'video/mp4',
+        'avi' => 'video/x-msvideo',
+        'mov' => 'video/quicktime',
+        'wmv' => 'video/x-ms-wmv',
+        'flv' => 'video/x-flv',
+        'webm' => 'video/webm',
+        'mkv' => 'video/x-matroska',
         'mp3' => 'audio/mpeg',
-        'zip' => 'application/zip'
+        'wav' => 'audio/wav',
+        'ogg' => 'audio/ogg',
+        'flac' => 'audio/flac',
+        'aac' => 'audio/aac',
+        'm4a' => 'audio/x-m4a',
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+        '7z' => 'application/x-7z-compressed',
+        'tar' => 'application/x-tar',
+        'gz' => 'application/gzip',
     ];
 
     return $mimeTypes[$ext] ?? 'application/octet-stream';
