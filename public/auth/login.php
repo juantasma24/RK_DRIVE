@@ -84,6 +84,8 @@
                 <p class="card-text small mb-0" style="line-height:1.8;">
                     <strong style="color:var(--text-muted);">Admin:</strong>
                     <span style="color:var(--text-secondary);">admin@rksolutions.com / password</span><br>
+                    <strong style="color:var(--text-muted);">Trabajador:</strong>
+                    <span style="color:var(--text-secondary);">trabajador@rksolutions.com / password</span><br>
                     <strong style="color:var(--text-muted);">Cliente:</strong>
                     <span style="color:var(--text-secondary);">cliente1@empresaabc.com / password</span>
                 </p>
