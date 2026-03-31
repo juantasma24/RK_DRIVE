@@ -74,22 +74,10 @@
         </div>
     </div>
 
-    <!-- Demo credentials -->
     <div class="login-info mt-4 w-100" style="max-width:420px;">
-        <div class="card">
-            <div class="card-body text-center py-3 px-4">
-                <h6 class="card-title mb-2">
-                    <i class="bi bi-info-circle me-1"></i>Credenciales de Demo
-                </h6>
-                <p class="card-text small mb-0" style="line-height:1.8;">
-                    <strong style="color:var(--text-muted);">Admin:</strong>
-                    <span style="color:var(--text-secondary);">admin@rksolutions.com / password</span><br>
-                    <strong style="color:var(--text-muted);">Trabajador:</strong>
-                    <span style="color:var(--text-secondary);">trabajador@rksolutions.com / password</span><br>
-                    <strong style="color:var(--text-muted);">Cliente:</strong>
-                    <span style="color:var(--text-secondary);">cliente1@empresaabc.com / password</span>
-                </p>
-            </div>
+        <div class="alert alert-info py-2 small text-center mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Contacta al administrador para obtener tus credenciales de acceso.
         </div>
     </div>
 </div>

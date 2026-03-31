@@ -341,10 +341,13 @@ function isPathSafe($path, $baseDir = null) {
         if ($realParent === false) {
             return false;
         }
-        return strpos($realParent, $realBase) === 0;
+        return $realParent === $realBase || strpos($realParent, $realBase . DIRECTORY_SEPARATOR) === 0;
     }
 
-    return $realPath !== false && strpos($realPath, $realBase) === 0;
+    return $realPath !== false && (
+        $realPath === $realBase ||
+        strpos($realPath, $realBase . DIRECTORY_SEPARATOR) === 0
+    );
 }
 
 /**
@@ -602,18 +605,8 @@ function generateSecureToken($length = 32) {
  *
  * @return string IP del cliente
  */
-function getClientIP() {
-    $ip = $_SERVER['REMOTE_ADDR'];
-
-    // Verificar proxies
-    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-        $ip = $_SERVER['HTTP_CLIENT_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-        $ip = trim($ips[0]);
-    }
-
-    // Validar IP
+function getClientIP(): string {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
 }
 

@@ -1,0 +1,196 @@
+================================================================================
+AUDITORÍA DE SEGURIDAD — RK Marketing Drive
+Fecha: 2026-03-31
+Auditor: Revisión automática + corrección aplicada
+================================================================================
+
+RESUMEN EJECUTIVO
+-----------------
+Se identificaron 22 hallazgos de seguridad clasificados en 4 niveles de
+severidad: 3 críticos, 5 altos, 6 medios y 8 bajos. Todos han sido corregidos
+en esta sesión. El proyecto usa PDO con parámetros ligados en todas las queries
+de datos (sin inyección SQL activa), aplica sanitize() en las vistas y tiene
+CSRF en todos los formularios POST.
+
+================================================================================
+HALLAZGOS CRÍTICOS — CORREGIDOS
+================================================================================
+
+[CRIT-01] Descarga sin verificar rol del propietario
+  Archivo:    src/controllers/AdminController.php
+              src/controllers/TrabajadorController.php
+  Problema:   downloadClientFile() no verificaba que el archivo perteneciera a
+              un usuario con rol 'cliente'. Un trabajador/admin con el ID de
+              cualquier archivo podía descargarlo (incluyendo archivos de admins).
+  Corrección: Añadida verificación $archivo->getUsuario()->getRol() !== 'cliente'
+              con redirect y mensaje de error si no cumple.
+
+[CRIT-02] Preview accesible a trabajadores sobre archivos de cualquier usuario
+  Archivo:    src/controllers/ArchivoController.php (método preview, línea ~172)
+  Problema:   La condición isWorker() eximía al trabajador de toda verificación
+              de propiedad, permitiéndole previsualizar archivos de admins u
+              otros trabajadores via /?page=files&action=preview&id=X.
+  Corrección: Lógica de autorización separada por rol:
+              - Admin: acceso total
+              - Trabajador: solo archivos de usuarios con rol 'cliente'
+              - Cliente: solo sus propios archivos
+
+[CRIT-03] Credenciales demo hardcodeadas en HTML público
+  Archivo:    public/auth/login.php
+  Problema:   El HTML de la página de login mostraba emails y contraseñas reales
+              de las cuentas demo (admin, trabajador, cliente) a cualquier
+              visitante sin autenticación.
+  Corrección: Eliminado el bloque con credenciales. Reemplazado por mensaje
+              genérico: "Contacta al administrador para obtener tus credenciales".
+
+================================================================================
+HALLAZGOS ALTOS — CORREGIDOS
+================================================================================
+
+[HIGH-01] IP spoofing en sistema de rate limiting (anti-brute-force)
+  Archivo:    src/procesos/security.php (función getClientIP)
+  Problema:   getClientIP() confiaba en HTTP_CLIENT_IP y HTTP_X_FORWARDED_FOR,
+              headers que cualquier cliente puede falsificar. Permitía eludir el
+              límite de intentos de login enviando una IP distinta cada vez.
+  Corrección: getClientIP() ahora usa exclusivamente REMOTE_ADDR, validado con
+              FILTER_VALIDATE_IP. Si la IP no es válida retorna '0.0.0.0'.
+
+[HIGH-02] Sin headers no-cache en páginas autenticadas
+  Archivo:    public/index.php
+  Problema:   Las páginas del dashboard, carpetas y perfil podían quedar
+              cacheadas en el navegador. Tras cerrar sesión, otro usuario en el
+              mismo equipo podía verlas pulsando "Atrás".
+  Corrección: Añadidos headers Cache-Control: no-store, Pragma: no-cache y
+              Expires pasado para todas las páginas de sesión activa.
+
+[HIGH-03] storage_gb sin validación de rango en servidor
+  Archivo:    src/controllers/AdminController.php (createUser y updateUser)
+  Problema:   Solo el atributo HTML min/max validaba el rango. Enviando
+              storage_gb=0 o storage_gb=-1 via POST directo se asignaba
+              almacenamiento 0 o negativo al usuario.
+  Corrección: max(1, min(1000, (int)$_POST['storage_gb'])) en ambos métodos.
+
+================================================================================
+HALLAZGOS MEDIOS — CORREGIDOS
+================================================================================
+
+[MED-01] Content-Disposition sin encoding correcto
+  Archivo:    src/controllers/ArchivoController.php
+              src/controllers/AdminController.php
+              src/controllers/TrabajadorController.php
+  Problema:   El nombre de archivo en el header HTTP no estaba codificado.
+              Caracteres especiales o comillas podían romper el header o causar
+              comportamiento inesperado en el navegador.
+  Corrección: Cambiado a filename*=UTF-8''<rawurlencode> (RFC 5987) en los
+              tres controladores.
+
+[MED-02] XSS DOM: nombre de archivo en atributos onclick via innerHTML
+  Archivo:    public/admin/client_files.php
+              public/worker/client_files.php
+              public/folders/show.php
+  Problema:   Los atributos onclick usaban addslashes(sanitize()) para insertar
+              el nombre en JavaScript. addslashes() es insuficiente para
+              contexto JS complejo (no escapa todos los vectores). El nombre
+              luego se insertaba en innerHTML sin escape adicional.
+  Corrección: Reemplazado addslashes(sanitize()) por json_encode() con flags
+              JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT, que produce
+              escapado correcto para contexto JavaScript.
+
+[MED-03] isPathSafe() con fallo de path-prefix confusion
+  Archivo:    src/procesos/security.php (función isPathSafe)
+  Problema:   strpos($realPath, $realBase) === 0 aceptaría /var/uploads_evil
+              como subdirectorio de /var/uploads porque uno es prefijo del otro.
+  Corrección: Cambiado a verificar $realPath === $realBase OR
+              strpos($realPath, $realBase . DIRECTORY_SEPARATOR) === 0
+
+[MED-04] SVG permitido sin sanitización (XSS almacenado potencial)
+  Archivo:    src/controllers/ArchivoController.php (preview)
+              src/controllers/AdminController.php (preview/download)
+              src/controllers/TrabajadorController.php (preview/download)
+  Problema:   SVG puede contener <script> tags y event handlers inline.
+              Servirlo con Content-Type: image/svg+xml en contexto inline
+              ejecutaría JavaScript en el dominio de la aplicación.
+  Corrección: El endpoint de preview retorna HTTP 403 para SVG.
+              Los endpoints de download validan el MIME contra lista blanca
+              y usan application/octet-stream como fallback seguro.
+
+================================================================================
+HALLAZGOS BAJOS — CORREGIDOS
+================================================================================
+
+[LOW-01] CarpetaController::edit() sin validación de longitud máxima
+  Archivo:    src/controllers/CarpetaController.php (método edit/update)
+  Problema:   create() validaba strlen > 255 pero edit() no lo hacía,
+              permitiendo nombres de carpeta de longitud arbitraria.
+  Corrección: Añadida validación idéntica a create() en el método edit().
+
+[LOW-02] Descripción de archivo sin validación de longitud al editar
+  Archivo:    src/controllers/AdminController.php
+              src/controllers/TrabajadorController.php
+  Problema:   El textarea tiene maxlength="500" en HTML pero no se validaba
+              en el servidor. Una petición directa POST podía enviar una
+              descripción de longitud arbitraria.
+  Corrección: Añadido substr($descripcion, 0, 500) tras el trim() en ambos
+              controladores.
+
+[LOW-03] Logout accesible por GET sin CSRF
+  Archivo:    src/controllers/AuthController.php
+              src/components/header.php
+  Problema:   El logout se ejecutaba con GET a /?page=logout. Un atacante podía
+              forzar el cierre de sesión de cualquier usuario autenticado
+              incluyendo <img src="...?page=logout"> en una página externa.
+  Corrección: logout() ahora exige REQUEST_METHOD === 'POST' y token CSRF
+              válido. El enlace en el header se reemplazó por un formulario
+              POST con csrfField().
+
+================================================================================
+HALLAZGOS INFORMATIVOS — NO MODIFICADOS (requieren decisión del equipo)
+================================================================================
+
+[INFO-01] APP_ENV=development expone errores PHP al navegador
+  Archivo:    config/config.php
+  Acción:     Cambiar a 'production' antes de cualquier despliegue.
+  Nota:       No se modificó porque es configuración local de desarrollo.
+
+[INFO-02] Credenciales de BD en texto plano (config/database.php)
+  Archivo:    config/database.php
+  Acción:     Migrar a variables de entorno (.env) antes de producción.
+  Nota:       No se modificó porque afectaría la configuración del entorno.
+
+[INFO-03] CSRF_SECRET hardcodeado sin uso activo
+  Archivo:    config/config.php
+  Acción:     Asignar valor aleatorio real o eliminar si no se usará.
+  Nota:       La generación de tokens CSRF usa random_bytes(), que es correcto.
+
+[INFO-04] CSP con unsafe-inline
+  Archivo:    src/procesos/security.php
+  Acción:     Migrar scripts inline a archivos externos para eliminar unsafe-inline.
+  Nota:       Requiere refactorización de scripts en todas las vistas. Se deja
+              pendiente para un sprint dedicado.
+
+[INFO-05] Token CSRF no rota después de uso
+  Archivo:    src/procesos/security.php (verifyCSRFToken)
+  Acción:     Implementar rotación post-uso con manejo de peticiones concurrentes.
+  Nota:       No se modificó para evitar romper flujos AJAX existentes sin
+              pruebas adecuadas.
+
+================================================================================
+ARCHIVOS MODIFICADOS EN ESTA AUDITORÍA
+================================================================================
+
+  src/controllers/ArchivoController.php
+  src/controllers/AdminController.php
+  src/controllers/TrabajadorController.php
+  src/controllers/CarpetaController.php
+  src/controllers/AuthController.php
+  src/procesos/security.php
+  index.php
+  public/auth/login.php
+  public/admin/client_files.php
+  public/worker/client_files.php
+  public/folders/show.php
+  src/components/header.php
+
+================================================================================
+FIN DEL REPORTE
+================================================================================

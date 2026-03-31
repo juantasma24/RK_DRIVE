@@ -152,9 +152,14 @@ class ArchivoController {
 
         logActivity($userId, 'file_download', "Archivo descargado: {$archivo->getNombreOriginal()}", 'archivo', $id);
 
+        $mimePermitidos = json_decode(ALLOWED_MIME_TYPES, true);
+        $mimeSeguro = in_array($archivo->getTipoMime(), $mimePermitidos)
+            ? $archivo->getTipoMime()
+            : 'application/octet-stream';
+
         header('Content-Description: File Transfer');
-        header('Content-Type: ' . $archivo->getTipoMime());
-        header('Content-Disposition: attachment; filename="' . $archivo->getNombreOriginal() . '"');
+        header('Content-Type: ' . $mimeSeguro);
+        header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($archivo->getNombreOriginal()));
         header('Content-Length: ' . $archivo->getTamanoBytes());
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
@@ -173,8 +178,26 @@ class ArchivoController {
         $userId  = getCurrentUserId();
         $archivo = em()->find(\App\Entity\Archivo::class, $id);
 
-        // Debe existir y pertenecer al usuario, o ser admin/trabajador
-        if (!$archivo || (!isAdmin() && !isWorker() && $archivo->getUsuario()->getId() !== $userId)) {
+        if (!$archivo) {
+            http_response_code(404);
+            exit;
+        }
+
+        $propietario = $archivo->getUsuario();
+
+        if (isAdmin()) {
+            // acceso total
+        } elseif (isWorker()) {
+            if ($propietario->getRol() !== 'cliente') {
+                http_response_code(403);
+                exit;
+            }
+        } elseif ($propietario->getId() !== $userId) {
+            http_response_code(403);
+            exit;
+        }
+
+        if ($archivo->getTipoMime() === 'image/svg+xml') {
             http_response_code(403);
             exit;
         }

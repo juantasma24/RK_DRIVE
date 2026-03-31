@@ -281,7 +281,7 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                                 <!-- Vista previa -->
                                 <?php if ($ptAdmin !== 'none'): ?>
                                 <button class="btn btn-sm btn-outline-secondary"
-                                        onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptAdmin ?>')"
+                                        onclick="abrirPreviewAdmin(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptAdmin ?>')"
                                         title="Vista previa">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -296,8 +296,8 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                                 <button class="btn btn-sm btn-outline-secondary"
                                         onclick="abrirModalEditar(
                                             <?= $a['id'] ?>,
-                                            '<?= addslashes(sanitize($a['nombre_original'])) ?>',
-                                            '<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>'
+                                            <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+                                            <?= json_encode($a['descripcion'] ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
                                         )"
                                         title="Editar">
                                     <i class="bi bi-pencil"></i>
@@ -306,7 +306,7 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                                 <button class="btn btn-sm btn-outline-danger"
                                         onclick="abrirModalEliminar(
                                             <?= $a['id'] ?>,
-                                            '<?= addslashes(sanitize($a['nombre_original'])) ?>'
+                                            <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
                                         )"
                                         title="Eliminar permanentemente">
                                     <i class="bi bi-trash"></i>
@@ -339,7 +339,7 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                             background:var(--surface-2,#1e1e1e);
                             cursor:<?= $ptG !== 'none' ? 'pointer' : 'default' ?>;"
                      <?php if ($ptG !== 'none'): ?>
-                     onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                     onclick="abrirPreviewAdmin(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptG ?>')"
                      <?php endif; ?>>
                     <?php if ($esImg): ?>
                         <img src="<?= $prevB . $a['id'] ?>" alt="" style="width:100%;height:110px;object-fit:cover;" loading="lazy"
@@ -363,17 +363,17 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                 <div class="card-footer p-1 d-flex gap-1 justify-content-end">
                     <?php if ($ptG !== 'none'): ?>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                            onclick="abrirPreviewAdmin(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptG ?>')"
                             title="Vista previa"><i class="bi bi-eye" style="font-size:.75rem;"></i></button>
                     <?php endif; ?>
                     <a href="<?= APP_URL ?>/?page=admin/clients&action=download&id=<?= $a['id'] ?>"
                        class="btn btn-sm btn-outline-secondary py-0 px-2" title="Descargar">
                         <i class="bi bi-download" style="font-size:.75rem;"></i></a>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirModalEditar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>','<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                            onclick="abrirModalEditar(<?= $a['id'] ?>,<?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,<?= json_encode($a['descripcion'] ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
                             title="Editar"><i class="bi bi-pencil" style="font-size:.75rem;"></i></button>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2"
-                            onclick="abrirModalEliminar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                            onclick="abrirModalEliminar(<?= $a['id'] ?>,<?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
                             title="Eliminar"><i class="bi bi-trash" style="font-size:.75rem;"></i></button>
                 </div>
             </div>

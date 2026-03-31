@@ -199,9 +199,12 @@
                             </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item text-danger" href="<?= APP_URL ?>/logout">
-                                    <i class="bi bi-box-arrow-right"></i>Cerrar Sesion
-                                </a>
+                                <form method="POST" action="<?= APP_URL ?>/?page=logout" class="d-inline">
+                                    <?= csrfField() ?>
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+                                    </button>
+                                </form>
                             </li>
                         </ul>
                     </li>

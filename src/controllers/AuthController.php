@@ -68,6 +68,10 @@ class AuthController {
     // =========================================================================
 
     public function logout() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/?page=dashboard');
+        }
+        requireCSRFToken();
         logoutUser();
         setFlash('success', 'Has cerrado sesion correctamente.');
         redirect('/?page=login');

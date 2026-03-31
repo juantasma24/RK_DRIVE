@@ -59,7 +59,7 @@ class AdminController {
         $email     = trim($_POST['email'] ?? '');
         $password  = $_POST['password'] ?? '';
         $rol       = $_POST['rol'] ?? 'cliente';
-        $storageGB = (int)($_POST['storage_gb'] ?? 2);
+        $storageGB = max(1, min(1000, (int)($_POST['storage_gb'] ?? 2)));
 
         if (empty($nombre) || empty($email) || empty($password)) {
             setFlash('error', 'Nombre, email y contraseña son obligatorios.');
@@ -109,7 +109,7 @@ class AdminController {
         $nombre    = trim($_POST['nombre'] ?? '');
         $email     = trim($_POST['email'] ?? '');
         $rol       = $_POST['rol'] ?? 'cliente';
-        $storageGB = (int)($_POST['storage_gb'] ?? 2);
+        $storageGB = max(1, min(1000, (int)($_POST['storage_gb'] ?? 2)));
 
         if (empty($nombre) || empty($email)) {
             setFlash('error', 'Nombre y email son obligatorios.');
@@ -386,6 +386,11 @@ class AdminController {
             redirect('/?page=admin/clients');
         }
 
+        if ($archivo->getUsuario()->getRol() !== 'cliente') {
+            setFlash('error', 'Archivo no encontrado.');
+            redirect('/?page=admin/clients');
+        }
+
         $rutaFisica = $archivo->getRutaFisica();
         if (!file_exists($rutaFisica)) {
             setFlash('error', 'El archivo físico no existe en el servidor.');
@@ -400,9 +405,14 @@ class AdminController {
             $archivoId
         );
 
+        $mimePermitidos = json_decode(ALLOWED_MIME_TYPES, true);
+        $mimeSeguro = in_array($archivo->getTipoMime(), $mimePermitidos)
+            ? $archivo->getTipoMime()
+            : 'application/octet-stream';
+
         header('Content-Description: File Transfer');
-        header('Content-Type: ' . $archivo->getTipoMime());
-        header('Content-Disposition: attachment; filename="' . $archivo->getNombreOriginal() . '"');
+        header('Content-Type: ' . $mimeSeguro);
+        header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($archivo->getNombreOriginal()));
         header('Content-Length: ' . $archivo->getTamanoBytes());
         header('Cache-Control: no-cache');
         readfile($rutaFisica);
@@ -423,6 +433,9 @@ class AdminController {
 
         $nuevoNombre  = trim($_POST['nombre_original'] ?? '');
         $descripcion  = trim($_POST['descripcion'] ?? '');
+        if (strlen($descripcion) > 500) {
+            $descripcion = substr($descripcion, 0, 500);
+        }
         $usuarioId    = $archivo->getUsuario()->getId();
 
         if (empty($nuevoNombre)) {
