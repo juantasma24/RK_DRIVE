@@ -70,6 +70,53 @@ class ArchivoRepository
     }
 
     /**
+     * Archivos de un cliente para el panel admin, con filtros opcionales (DBAL)
+     *
+     * Filtros soportados:
+     *   en_papelera  bool   — activos (false) o en papelera (true). Sin filtro: ambos.
+     *   carpeta_id   int    — limitar a una carpeta específica
+     *   extension    string — p.ej. 'pdf', 'jpg'
+     *   busqueda     string — búsqueda parcial en nombre_original
+     *   limit        int    — máximo de resultados
+     */
+    public function findByUsuarioId(int $usuarioId, array $filters = []): array
+    {
+        $sql = "SELECT a.*, c.nombre AS carpeta_nombre
+                FROM archivos a
+                INNER JOIN carpetas c ON a.carpeta_id = c.id
+                WHERE a.usuario_id = :usuario_id";
+        $params = ['usuario_id' => $usuarioId];
+
+        if (isset($filters['en_papelera'])) {
+            $sql .= " AND a.en_papelera = :en_papelera";
+            $params['en_papelera'] = $filters['en_papelera'] ? 1 : 0;
+        }
+
+        if (!empty($filters['carpeta_id'])) {
+            $sql .= " AND a.carpeta_id = :carpeta_id";
+            $params['carpeta_id'] = (int)$filters['carpeta_id'];
+        }
+
+        if (!empty($filters['extension'])) {
+            $sql .= " AND a.extension = :extension";
+            $params['extension'] = strtolower($filters['extension']);
+        }
+
+        if (!empty($filters['busqueda'])) {
+            $sql .= " AND a.nombre_original LIKE :busqueda";
+            $params['busqueda'] = '%' . $filters['busqueda'] . '%';
+        }
+
+        $sql .= " ORDER BY a.fecha_subida DESC";
+
+        if (!empty($filters['limit'])) {
+            $sql .= " LIMIT " . (int)$filters['limit'];
+        }
+
+        return $this->em->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
+    }
+
+    /**
      * Archivos recientes de un usuario con nombre de carpeta (DBAL)
      */
     public function getRecientesByUsuario(int $usuarioId, int $limit = 10): array

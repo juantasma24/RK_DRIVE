@@ -95,6 +95,11 @@
                                 </a>
                             </li>
                             <li>
+                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/clients">
+                                    <i class="bi bi-folder2-open"></i>Archivos por Cliente
+                                </a>
+                            </li>
+                            <li>
                                 <a class="dropdown-item" href="<?= APP_URL ?>/admin/logs">
                                     <i class="bi bi-journal-text"></i>Logs
                                 </a>

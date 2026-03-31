@@ -100,7 +100,7 @@ if ($id !== null) {
 // Rutas permitidas
 $publicRoutes = ['login', 'register', 'forgot-password', 'reset-password', 'logout'];
 $clientRoutes = ['dashboard', 'folders', 'files', 'trash', 'profile', 'notifications'];
-$adminRoutes = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings'];
+$adminRoutes = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings', 'admin/clients'];
 
 //=============================================================================
 // VERIFICAR AUTENTICACION
@@ -240,6 +240,13 @@ switch ($page) {
         include __DIR__ . '/src/controllers/AdminController.php';
         $controller = new AdminController();
         $viewData = $controller->settings();
+        break;
+
+    case 'admin/clients':
+        $pageTitle = 'Archivos por Cliente';
+        include __DIR__ . '/src/controllers/AdminController.php';
+        $controller = new AdminController();
+        $viewData = $controller->clients($action, $id);
         break;
 
     // Ruta por defecto
