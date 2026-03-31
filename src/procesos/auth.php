@@ -92,7 +92,12 @@ function requireAuth($requiredRole = null) {
     }
     if ($requiredRole === 'admin' && !isAdmin()) {
         setFlash('error', 'No tienes permisos para acceder a esta pagina.');
-        redirect('/dashboard');
+        redirect('/?page=dashboard');
+    }
+    // Solo trabajadores (y admins) pueden acceder a rutas de trabajador
+    if ($requiredRole === 'trabajador' && !isWorker() && !isAdmin()) {
+        setFlash('error', 'No tienes permisos para acceder a esta pagina.');
+        redirect('/?page=dashboard');
     }
     return true;
 }
@@ -224,7 +229,7 @@ function createUser($data) {
         return ['success' => false, 'errors' => $validation['errors']];
     }
 
-    $rol = isset($data['rol']) && in_array($data['rol'], ['cliente', 'admin']) ? $data['rol'] : 'cliente';
+    $rol = isset($data['rol']) && in_array($data['rol'], ['cliente', 'admin', 'trabajador']) ? $data['rol'] : 'cliente';
     $almacenamiento = isset($data['almacenamiento_maximo'])
         ? (string)sanitizeInt($data['almacenamiento_maximo'])
         : (string)MAX_STORAGE_PER_CLIENT;
@@ -271,7 +276,7 @@ function updateUser($userId, $data) {
     }
 
     if (isset($data['rol'])) {
-        if (!in_array($data['rol'], ['cliente', 'admin'])) {
+        if (!in_array($data['rol'], ['cliente', 'admin', 'trabajador'])) {
             return ['success' => false, 'error' => 'Rol no valido.'];
         }
         $user->setRol($data['rol']);

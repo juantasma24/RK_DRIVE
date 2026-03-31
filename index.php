@@ -100,7 +100,8 @@ if ($id !== null) {
 // Rutas permitidas
 $publicRoutes = ['login', 'register', 'forgot-password', 'reset-password', 'logout'];
 $clientRoutes = ['dashboard', 'folders', 'files', 'trash', 'profile', 'notifications'];
-$adminRoutes = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings', 'admin/clients'];
+$adminRoutes  = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings', 'admin/clients'];
+$workerRoutes = ['worker/clients'];
 
 //=============================================================================
 // VERIFICAR AUTENTICACION
@@ -122,7 +123,18 @@ if ($isLoggedIn && in_array($page, ['login', 'register'])) {
 // Verificar permisos de administrador
 if (in_array($page, $adminRoutes) && $userRole !== 'admin') {
     setFlash('error', 'No tienes permisos para acceder a esta pagina.');
-    redirect('/dashboard');
+    redirect('/?page=dashboard');
+}
+
+// Verificar permisos de trabajador
+if (in_array($page, $workerRoutes) && !in_array($userRole, ['trabajador', 'admin'])) {
+    setFlash('error', 'No tienes permisos para acceder a esta pagina.');
+    redirect('/?page=dashboard');
+}
+
+// Redirigir trabajadores que intenten acceder a rutas de cliente
+if ($isLoggedIn && $userRole === 'trabajador' && in_array($page, $clientRoutes)) {
+    redirect('/?page=worker/clients');
 }
 
 //=============================================================================
@@ -246,6 +258,13 @@ switch ($page) {
         $pageTitle = 'Archivos por Cliente';
         include __DIR__ . '/src/controllers/AdminController.php';
         $controller = new AdminController();
+        $viewData = $controller->clients($action, $id);
+        break;
+
+    case 'worker/clients':
+        $pageTitle = 'Archivos por Cliente';
+        include __DIR__ . '/src/controllers/TrabajadorController.php';
+        $controller = new TrabajadorController();
         $viewData = $controller->clients($action, $id);
         break;
 

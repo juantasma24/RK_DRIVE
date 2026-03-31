@@ -173,8 +173,8 @@ class ArchivoController {
         $userId  = getCurrentUserId();
         $archivo = em()->find(\App\Entity\Archivo::class, $id);
 
-        // Debe existir y pertenecer al usuario (o ser admin)
-        if (!$archivo || (!isAdmin() && $archivo->getUsuario()->getId() !== $userId)) {
+        // Debe existir y pertenecer al usuario, o ser admin/trabajador
+        if (!$archivo || (!isAdmin() && !isWorker() && $archivo->getUsuario()->getId() !== $userId)) {
             http_response_code(403);
             exit;
         }
