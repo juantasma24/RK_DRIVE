@@ -21,11 +21,13 @@ class AdminController {
 
     public function users($action, $id) {
         switch ($action) {
-            case 'create': return $this->createUser();
-            case 'edit':   return $this->editUser((int)$id);
-            case 'toggle': return $this->toggleUser((int)$id);
-            case 'delete': return $this->deleteUser((int)$id);
-            default:       return $this->listUsers();
+            case 'create':           return $this->createUser();
+            case 'edit':             return $this->editUser((int)$id);
+            case 'toggle':           return $this->toggleUser((int)$id);
+            case 'delete':           return $this->deleteUser((int)$id);
+            case 'toggleEditPerm':   return $this->togglePermission((int)$id, 'editar');
+            case 'toggleDeletePerm': return $this->togglePermission((int)$id, 'eliminar');
+            default:                 return $this->listUsers();
         }
     }
 
@@ -33,6 +35,7 @@ class AdminController {
         $usuarios = em()->getConnection()->executeQuery(
             "SELECT u.id, u.nombre, u.email, u.rol, u.activo,
                     u.almacenamiento_usado, u.almacenamiento_maximo,
+                    u.puede_editar_archivos, u.puede_eliminar_archivos,
                     u.ultimo_acceso, u.fecha_creacion,
                     COUNT(DISTINCT c.id) AS total_carpetas,
                     COUNT(DISTINCT a.id) AS total_archivos
@@ -69,7 +72,7 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        if (!in_array($rol, ['cliente', 'admin'])) $rol = 'cliente';
+        if (!in_array($rol, ['cliente', 'admin', 'trabajador'])) $rol = 'cliente';
 
         $repo = new \App\Repository\UsuarioRepository(em());
         if ($repo->findByEmail($email)) {
@@ -119,7 +122,7 @@ class AdminController {
             redirect('/?page=admin/users');
         }
 
-        if (!in_array($rol, ['cliente', 'admin'])) $rol = 'cliente';
+        if (!in_array($rol, ['cliente', 'admin', 'trabajador'])) $rol = 'cliente';
 
         $existing = (new \App\Repository\UsuarioRepository(em()))->findByEmail($email);
         if ($existing && $existing->getId() !== $id) {
@@ -170,6 +173,37 @@ class AdminController {
         $accion = $nuevoEstado ? 'activado' : 'desactivado';
         logActivity(getCurrentUserId(), 'admin_user_toggle', "Usuario {$accion}: {$usuario->getNombre()}", 'usuario', $id);
         setFlash('success', "Usuario \"{$usuario->getNombre()}\" {$accion}.");
+        redirect('/?page=admin/users');
+    }
+
+    private function togglePermission($id, $tipo) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/?page=admin/users');
+        }
+        requireCSRFToken();
+
+        $usuario = em()->find(\App\Entity\Usuario::class, $id);
+        if (!$usuario || $usuario->getRol() !== 'trabajador') {
+            setFlash('error', 'Trabajador no encontrado.');
+            redirect('/?page=admin/users');
+        }
+
+        if ($tipo === 'editar') {
+            $nuevo = !$usuario->isPuedeEditarArchivos();
+            $usuario->setPuedeEditarArchivos($nuevo);
+            $label = $nuevo ? 'activado permiso de edicion' : 'revocado permiso de edicion';
+        } else {
+            $nuevo = !$usuario->isPuedeEliminarArchivos();
+            $usuario->setPuedeEliminarArchivos($nuevo);
+            $label = $nuevo ? 'activado permiso de eliminacion' : 'revocado permiso de eliminacion';
+        }
+
+        $usuario->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
+
+        logActivity(getCurrentUserId(), 'admin_perm_toggle',
+            "Se ha {$label} para trabajador: {$usuario->getNombre()}", 'usuario', $id);
+        setFlash('success', "Permiso actualizado para \"{$usuario->getNombre()}\".");
         redirect('/?page=admin/users');
     }
 

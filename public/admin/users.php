@@ -37,6 +37,7 @@
                         <th>Estado</th>
                         <th>Carpetas / Archivos</th>
                         <th>Almacenamiento</th>
+                        <th>Permisos</th>
                         <th>Ultimo acceso</th>
                         <th class="text-end pe-3">Acciones</th>
                     </tr>
@@ -53,6 +54,8 @@
                         <td>
                             <?php if ($u['rol'] === 'admin'): ?>
                             <span class="badge bg-danger-subtle text-danger">Admin</span>
+                            <?php elseif ($u['rol'] === 'trabajador'): ?>
+                            <span class="badge bg-warning-subtle text-warning">Trabajador</span>
                             <?php else: ?>
                             <span class="badge bg-primary-subtle text-primary">Cliente</span>
                             <?php endif; ?>
@@ -90,6 +93,34 @@
                                 <?= formatFileSize($u['almacenamiento_usado']) ?> /
                                 <?= formatFileSize($u['almacenamiento_maximo']) ?>
                             </div>
+                        </td>
+                        <td>
+                            <?php if ($u['rol'] === 'trabajador'): ?>
+                            <div class="d-flex flex-column gap-1">
+                                <form method="POST"
+                                      action="<?= APP_URL ?>/?page=admin/users&action=toggleEditPerm&id=<?= $u['id'] ?>">
+                                    <?= csrfField() ?>
+                                    <button type="submit"
+                                            class="btn btn-xs <?= $u['puede_editar_archivos'] ? 'btn-warning' : 'btn-outline-secondary' ?>"
+                                            style="font-size:.7rem;padding:.15rem .4rem;"
+                                            title="<?= $u['puede_editar_archivos'] ? 'Revocar edición' : 'Permitir edición' ?>">
+                                        <i class="bi bi-pencil me-1"></i><?= $u['puede_editar_archivos'] ? 'Editar: ON' : 'Editar: OFF' ?>
+                                    </button>
+                                </form>
+                                <form method="POST"
+                                      action="<?= APP_URL ?>/?page=admin/users&action=toggleDeletePerm&id=<?= $u['id'] ?>">
+                                    <?= csrfField() ?>
+                                    <button type="submit"
+                                            class="btn btn-xs <?= $u['puede_eliminar_archivos'] ? 'btn-danger' : 'btn-outline-secondary' ?>"
+                                            style="font-size:.7rem;padding:.15rem .4rem;"
+                                            title="<?= $u['puede_eliminar_archivos'] ? 'Revocar eliminación' : 'Permitir eliminación' ?>">
+                                        <i class="bi bi-trash me-1"></i><?= $u['puede_eliminar_archivos'] ? 'Eliminar: ON' : 'Eliminar: OFF' ?>
+                                    </button>
+                                </form>
+                            </div>
+                            <?php else: ?>
+                            <span class="text-muted small">—</span>
+                            <?php endif; ?>
                         </td>
                         <td class="small text-muted">
                             <?= $u['ultimo_acceso'] ? formatDate($u['ultimo_acceso'], 'd/m/Y H:i') : 'Nunca' ?>
@@ -160,6 +191,7 @@
                             <label class="form-label">Rol</label>
                             <select class="form-select" name="rol">
                                 <option value="cliente">Cliente</option>
+                                <option value="trabajador">Trabajador</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -210,6 +242,7 @@
                             <label class="form-label">Rol</label>
                             <select class="form-select" id="editar_rol" name="rol">
                                 <option value="cliente">Cliente</option>
+                                <option value="trabajador">Trabajador</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>

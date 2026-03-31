@@ -412,6 +412,32 @@ function isAdmin() {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
 }
 
+function isWorker() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'trabajador';
+}
+
+/**
+ * Comprueba si el trabajador autenticado puede editar archivos.
+ * Siempre consulta la BD para reflejar cambios del admin en tiempo real.
+ */
+function canEditFiles(): bool {
+    if (isAdmin()) return true;
+    if (!isWorker()) return false;
+    $user = em()->find(\App\Entity\Usuario::class, getCurrentUserId());
+    return $user ? $user->isPuedeEditarArchivos() : false;
+}
+
+/**
+ * Comprueba si el trabajador autenticado puede eliminar archivos.
+ * Siempre consulta la BD para reflejar cambios del admin en tiempo real.
+ */
+function canDeleteFiles(): bool {
+    if (isAdmin()) return true;
+    if (!isWorker()) return false;
+    $user = em()->find(\App\Entity\Usuario::class, getCurrentUserId());
+    return $user ? $user->isPuedeEliminarArchivos() : false;
+}
+
 /**
  * Obtiene el ID del usuario actual
  *

@@ -77,6 +77,15 @@
                         </a>
                     </li>
 
+                    <?php if (isWorker()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= ($page ?? '') === 'worker/clients' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/?page=worker/clients">
+                            <i class="bi bi-people"></i> Clientes
+                        </a>
+                    </li>
+                    <?php endif; ?>
+
                     <?php if (isAdmin()): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle <?= str_starts_with($page ?? '', 'admin') ? 'active' : '' ?>"

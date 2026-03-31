@@ -52,6 +52,12 @@ class Usuario
     #[ORM\Column(name: 'fecha_creacion', type: 'datetime_immutable', options: ['default' => 'CURRENT_TIMESTAMP'])]
     private \DateTimeImmutable $fechaCreacion;
 
+    #[ORM\Column(name: 'puede_editar_archivos', type: 'boolean', options: ['default' => false])]
+    private bool $puedeEditarArchivos = false;
+
+    #[ORM\Column(name: 'puede_eliminar_archivos', type: 'boolean', options: ['default' => false])]
+    private bool $puedeEliminarArchivos = false;
+
     #[ORM\Column(name: 'fecha_actualizacion', type: 'datetime_immutable', options: ['default' => 'CURRENT_TIMESTAMP'])]
     private \DateTimeImmutable $fechaActualizacion;
 
@@ -87,6 +93,10 @@ class Usuario
     public function getUltimoAcceso(): ?\DateTimeImmutable { return $this->ultimoAcceso; }
     public function setUltimoAcceso(?\DateTimeImmutable $dt): void { $this->ultimoAcceso = $dt; }
     public function getFechaCreacion(): \DateTimeImmutable { return $this->fechaCreacion; }
+    public function isPuedeEditarArchivos(): bool { return $this->puedeEditarArchivos; }
+    public function setPuedeEditarArchivos(bool $v): void { $this->puedeEditarArchivos = $v; }
+    public function isPuedeEliminarArchivos(): bool { return $this->puedeEliminarArchivos; }
+    public function setPuedeEliminarArchivos(bool $v): void { $this->puedeEliminarArchivos = $v; }
     public function getFechaActualizacion(): \DateTimeImmutable { return $this->fechaActualizacion; }
     public function setFechaActualizacion(\DateTimeImmutable $dt): void { $this->fechaActualizacion = $dt; }
 
