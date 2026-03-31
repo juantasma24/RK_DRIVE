@@ -156,7 +156,7 @@ function previewType(string $ext): string {
                             <div class="btn-group btn-group-sm">
                                 <?php if ($pt !== 'none'): ?>
                                 <button class="btn btn-outline-secondary"
-                                        onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                                        onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
                                         title="Vista previa">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -166,7 +166,7 @@ function previewType(string $ext): string {
                                     <i class="bi bi-download"></i>
                                 </a>
                                 <button class="btn btn-outline-danger"
-                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
                                         title="Mover a papelera">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -200,7 +200,7 @@ function previewType(string $ext): string {
                      style="height:120px;overflow:hidden;border-radius:.5rem .5rem 0 0;
                             background:var(--surface-2,#1e1e1e);cursor:<?= $pt !== 'none' ? 'pointer' : 'default' ?>;"
                      <?php if ($pt !== 'none'): ?>
-                     onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                     onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
                      title="Vista previa"
                      <?php endif; ?>>
                     <?php if ($esImagen): ?>
@@ -242,7 +242,7 @@ function previewType(string $ext): string {
                 <div class="card-footer p-1 d-flex gap-1 justify-content-end">
                     <?php if ($pt !== 'none'): ?>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirPreview(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $pt ?>')"
+                            onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
                             title="Vista previa">
                         <i class="bi bi-eye" style="font-size:.75rem;"></i>
                     </button>
@@ -252,7 +252,7 @@ function previewType(string $ext): string {
                         <i class="bi bi-download" style="font-size:.75rem;"></i>
                     </a>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2"
-                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
                             title="Mover a papelera">
                         <i class="bi bi-trash" style="font-size:.75rem;"></i>
                     </button>

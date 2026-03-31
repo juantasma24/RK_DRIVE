@@ -107,6 +107,11 @@ class TrabajadorController {
             redirect('/?page=worker/clients');
         }
 
+        if ($archivo->getUsuario()->getRol() !== 'cliente') {
+            setFlash('error', 'Archivo no encontrado.');
+            redirect('/?page=worker/clients');
+        }
+
         $rutaFisica = $archivo->getRutaFisica();
         if (!file_exists($rutaFisica)) {
             setFlash('error', 'El archivo físico no existe en el servidor.');
@@ -121,9 +126,14 @@ class TrabajadorController {
             $archivoId
         );
 
+        $mimePermitidos = json_decode(ALLOWED_MIME_TYPES, true);
+        $mimeSeguro = in_array($archivo->getTipoMime(), $mimePermitidos)
+            ? $archivo->getTipoMime()
+            : 'application/octet-stream';
+
         header('Content-Description: File Transfer');
-        header('Content-Type: ' . $archivo->getTipoMime());
-        header('Content-Disposition: attachment; filename="' . $archivo->getNombreOriginal() . '"');
+        header('Content-Type: ' . $mimeSeguro);
+        header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($archivo->getNombreOriginal()));
         header('Content-Length: ' . $archivo->getTamanoBytes());
         header('Cache-Control: no-cache');
         readfile($rutaFisica);
@@ -153,6 +163,9 @@ class TrabajadorController {
 
         $nuevoNombre = trim($_POST['nombre_original'] ?? '');
         $descripcion = trim($_POST['descripcion'] ?? '');
+        if (strlen($descripcion) > 500) {
+            $descripcion = substr($descripcion, 0, 500);
+        }
         $usuarioId   = $archivo->getUsuario()->getId();
 
         if (empty($nuevoNombre)) {

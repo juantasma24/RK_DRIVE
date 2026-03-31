@@ -125,6 +125,11 @@ class CarpetaController {
             redirect('/?page=folders');
         }
 
+        if (strlen($nombre) > 255) {
+            setFlash('error', 'El nombre no puede superar los 255 caracteres.');
+            redirect('/?page=folders');
+        }
+
         $carpeta->setNombre(sanitizeString($nombre));
         $carpeta->setDescripcion(!empty($desc) ? sanitizeString($desc) : null);
         $carpeta->setFechaActualizacion(new \DateTimeImmutable());
