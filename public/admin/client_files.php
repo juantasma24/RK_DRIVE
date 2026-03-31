@@ -172,6 +172,46 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
     </div>
 </div>
 
+<!-- Barra de controles -->
+<?php if (!empty($archivos)): ?>
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted small me-1">
+                <i class="bi bi-files me-1"></i>
+                <span id="contadorArchivosAdmin"><?= count($archivos) ?></span>
+                archivo<?= count($archivos) != 1 ? 's' : '' ?>
+            </span>
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Ordenar:</span>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-admin active-sort" data-sort="nombre">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Nombre
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-admin" data-sort="tipo">
+                    <i class="bi bi-funnel me-1"></i>Tipo
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-admin" data-sort="fecha">
+                    <i class="bi bi-calendar me-1"></i>Fecha
+                </button>
+            </div>
+            <div class="flex-grow-1"></div>
+            <div class="input-group input-group-sm" style="max-width:200px;">
+                <span class="input-group-text"><i class="bi bi-search" style="font-size:.8rem;"></i></span>
+                <input type="text" id="buscarArchivoAdmin" class="form-control" placeholder="Buscar..." style="font-size:.83rem;">
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+                <button id="btnVistaListaAdmin" class="btn btn-outline-secondary active" title="Vista lista">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <button id="btnVistaGridAdmin" class="btn btn-outline-secondary" title="Vista cuadricula">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Tabla de archivos -->
 <?php if (empty($archivos)): ?>
 <div class="card">
@@ -186,10 +226,10 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
     </div>
 </div>
 <?php else: ?>
-<div class="card">
+<div id="vistaListaAdmin" class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="tablaArchivosAdmin">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">Archivo</th>
@@ -204,7 +244,9 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                     <?php foreach ($archivos as $a):
                         $ptAdmin = previewTypeAdmin($a['extension']);
                     ?>
-                    <tr>
+                    <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+                        data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+                        data-fecha="<?= $a['fecha_subida'] ?>">
                         <td class="ps-3">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi <?= getFileIcon($a['extension']) ?> text-muted fs-5 flex-shrink-0"></i>
@@ -276,6 +318,67 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<!-- Vista cuadricula (Admin) -->
+<div id="vistaGridAdmin" class="d-none">
+    <div class="row g-3" id="gridArchivosAdmin">
+        <?php foreach ($archivos as $a):
+            $ptG   = previewTypeAdmin($a['extension']);
+            $esImg = ($ptG === 'image');
+            $prevB = APP_URL . '/?page=files&action=preview&id=';
+        ?>
+        <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item-admin"
+             data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+             data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+             data-fecha="<?= $a['fecha_subida'] ?>">
+            <div class="card h-100 file-card">
+                <div class="file-card-thumb d-flex align-items-center justify-content-center position-relative"
+                     style="height:110px;overflow:hidden;border-radius:.5rem .5rem 0 0;
+                            background:var(--surface-2,#1e1e1e);
+                            cursor:<?= $ptG !== 'none' ? 'pointer' : 'default' ?>;"
+                     <?php if ($ptG !== 'none'): ?>
+                     onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                     <?php endif; ?>>
+                    <?php if ($esImg): ?>
+                        <img src="<?= $prevB . $a['id'] ?>" alt="" style="width:100%;height:110px;object-fit:cover;" loading="lazy"
+                             onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi <?= getFileIcon($a['extension']) ?> text-muted',style:'font-size:2.5rem'}))">
+                    <?php else: ?>
+                        <i class="bi <?= getFileIcon($a['extension']) ?> text-muted" style="font-size:2.5rem;"></i>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body p-2">
+                    <p class="mb-1 fw-semibold text-truncate" title="<?= sanitize($a['nombre_original']) ?>"
+                       style="font-size:.75rem;color:var(--text-primary);">
+                        <?= sanitize(truncateText($a['nombre_original'], 26)) ?>
+                    </p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?>" style="font-size:.62rem;">
+                            <?= strtoupper(sanitize($a['extension'])) ?>
+                        </span>
+                        <span class="text-muted" style="font-size:.67rem;"><?= formatFileSize($a['tamano_bytes']) ?></span>
+                    </div>
+                </div>
+                <div class="card-footer p-1 d-flex gap-1 justify-content-end">
+                    <?php if ($ptG !== 'none'): ?>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirPreviewAdmin(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                            title="Vista previa"><i class="bi bi-eye" style="font-size:.75rem;"></i></button>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/?page=admin/clients&action=download&id=<?= $a['id'] ?>"
+                       class="btn btn-sm btn-outline-secondary py-0 px-2" title="Descargar">
+                        <i class="bi bi-download" style="font-size:.75rem;"></i></a>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirModalEditar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>','<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                            title="Editar"><i class="bi bi-pencil" style="font-size:.75rem;"></i></button>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                            onclick="abrirModalEliminar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                            title="Eliminar"><i class="bi bi-trash" style="font-size:.75rem;"></i></button>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
     </div>
 </div>
 <?php endif; ?>
@@ -377,8 +480,90 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
 </div>
 
 
+<style>
+.active-sort { background:var(--color-primary,#5ea84a)!important;color:#0d0d0d!important;border-color:var(--color-primary,#5ea84a)!important; }
+.file-card   { transition:transform .18s ease,box-shadow .18s ease; }
+.file-card:hover { transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.35); }
+</style>
 <script>
 const APP_URL_ADMIN = '<?= APP_URL ?>';
+
+// ── Vista lista/grid ──────────────────────────────────────────────────────
+(function(){
+    let vistaAdmin = localStorage.getItem('rk-view-admin-files') || 'lista';
+    function aplicarVistaAdmin(v) {
+        vistaAdmin = v;
+        localStorage.setItem('rk-view-admin-files', v);
+        const lista = document.getElementById('vistaListaAdmin');
+        const grid  = document.getElementById('vistaGridAdmin');
+        const btnL  = document.getElementById('btnVistaListaAdmin');
+        const btnG  = document.getElementById('btnVistaGridAdmin');
+        if (!lista || !grid) return;
+        if (v === 'grid') {
+            lista.classList.add('d-none'); grid.classList.remove('d-none');
+            btnL.classList.remove('active'); btnG.classList.add('active');
+        } else {
+            grid.classList.add('d-none'); lista.classList.remove('d-none');
+            btnG.classList.remove('active'); btnL.classList.add('active');
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() { aplicarVistaAdmin(vistaAdmin); aplicarOrdenAdmin('nombre', false); });
+    document.getElementById('btnVistaListaAdmin')?.addEventListener('click', function(){ aplicarVistaAdmin('lista'); });
+    document.getElementById('btnVistaGridAdmin')?.addEventListener('click',  function(){ aplicarVistaAdmin('grid'); });
+})();
+
+// ── Ordenar ───────────────────────────────────────────────────────────────
+const sortDirAdmin  = { nombre:'asc', tipo:'asc', fecha:'desc' };
+let   sortActAdmin  = 'nombre';
+
+document.querySelectorAll('.sort-btn-admin').forEach(btn => {
+    btn.addEventListener('click', function(){
+        const campo = this.dataset.sort;
+        if (sortActAdmin === campo) sortDirAdmin[campo] = sortDirAdmin[campo]==='asc'?'desc':'asc';
+        else sortActAdmin = campo;
+        document.querySelectorAll('.sort-btn-admin').forEach(b=>b.classList.remove('active-sort'));
+        this.classList.add('active-sort');
+        aplicarOrdenAdmin(campo, true);
+    });
+});
+
+function aplicarOrdenAdmin(campo, conIcono) {
+    const dir = sortDirAdmin[campo];
+    const tbody = document.querySelector('#tablaArchivosAdmin tbody');
+    if (tbody) {
+        const filas = Array.from(tbody.querySelectorAll('tr'));
+        filas.sort((a,b) => compAdmin(a.dataset[campo], b.dataset[campo], dir));
+        filas.forEach(f => tbody.appendChild(f));
+    }
+    const grid = document.getElementById('gridArchivosAdmin');
+    if (grid) {
+        const items = Array.from(grid.querySelectorAll('.grid-item-admin'));
+        items.sort((a,b) => compAdmin(a.dataset[campo], b.dataset[campo], dir));
+        items.forEach(i => grid.appendChild(i));
+    }
+}
+
+function compAdmin(a, b, dir) {
+    a = (a||'').toLowerCase(); b = (b||'').toLowerCase();
+    const r = a < b ? -1 : a > b ? 1 : 0;
+    return dir==='asc' ? r : -r;
+}
+
+// ── Búsqueda ──────────────────────────────────────────────────────────────
+document.getElementById('buscarArchivoAdmin')?.addEventListener('input', function(){
+    const term = this.value.toLowerCase();
+    let vis = 0;
+    document.querySelectorAll('#tablaArchivosAdmin tbody tr').forEach(f => {
+        const m = f.textContent.toLowerCase().includes(term);
+        f.style.display = m ? '' : 'none';
+        if (m) vis++;
+    });
+    document.querySelectorAll('#gridArchivosAdmin .grid-item-admin').forEach(i => {
+        i.style.display = i.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+    const c = document.getElementById('contadorArchivosAdmin');
+    if (c) c.textContent = term ? vis : <?= count($archivos) ?>;
+});
 
 function abrirPreviewAdmin(id, nombre, tipo) {
     const url   = APP_URL_ADMIN + '/?page=files&action=preview&id=' + id;

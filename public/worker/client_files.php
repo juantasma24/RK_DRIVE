@@ -192,10 +192,49 @@ function previewTypeWorker(string $ext): string {
     </div>
 </div>
 <?php else: ?>
-<div class="card">
+
+<!-- Barra de controles -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted small me-1">
+                <i class="bi bi-files me-1"></i>
+                <span id="contadorArchivosWorker"><?= count($archivos) ?></span>
+                archivo<?= count($archivos) != 1 ? 's' : '' ?>
+            </span>
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Ordenar:</span>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-worker active-sort" data-sort="nombre">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Nombre
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-worker" data-sort="tipo">
+                    <i class="bi bi-funnel me-1"></i>Tipo
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-worker" data-sort="fecha">
+                    <i class="bi bi-calendar me-1"></i>Fecha
+                </button>
+            </div>
+            <div class="flex-grow-1"></div>
+            <div class="input-group input-group-sm" style="max-width:200px;">
+                <span class="input-group-text"><i class="bi bi-search" style="font-size:.8rem;"></i></span>
+                <input type="text" id="buscarArchivoWorker" class="form-control" placeholder="Buscar..." style="font-size:.83rem;">
+            </div>
+            <div class="btn-group btn-group-sm" role="group">
+                <button id="btnVistaListaWorker" class="btn btn-outline-secondary active" title="Vista lista">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <button id="btnVistaGridWorker" class="btn btn-outline-secondary" title="Vista cuadricula">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vistaListaWorker" class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="tablaArchivosWorker">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">Archivo</th>
@@ -210,7 +249,9 @@ function previewTypeWorker(string $ext): string {
                     <?php foreach ($archivos as $a):
                         $ptW = previewTypeWorker($a['extension']);
                     ?>
-                    <tr>
+                    <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+                        data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+                        data-fecha="<?= $a['fecha_subida'] ?>">
                         <td class="ps-3">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi <?= getFileIcon($a['extension']) ?> text-muted fs-5 flex-shrink-0"></i>
@@ -285,6 +326,72 @@ function previewTypeWorker(string $ext): string {
         </div>
     </div>
 </div>
+
+<!-- Vista cuadricula (Worker) -->
+<div id="vistaGridWorker" class="d-none">
+    <div class="row g-3" id="gridArchivosWorker">
+        <?php foreach ($archivos as $a):
+            $ptG   = previewTypeWorker($a['extension']);
+            $esImg = ($ptG === 'image');
+            $prevB = APP_URL . '/?page=files&action=preview&id=';
+        ?>
+        <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item-worker"
+             data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+             data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+             data-fecha="<?= $a['fecha_subida'] ?>">
+            <div class="card h-100 file-card">
+                <div class="file-card-thumb d-flex align-items-center justify-content-center position-relative"
+                     style="height:110px;overflow:hidden;border-radius:.5rem .5rem 0 0;
+                            background:var(--surface-2,#1e1e1e);
+                            cursor:<?= $ptG !== 'none' ? 'pointer' : 'default' ?>;"
+                     <?php if ($ptG !== 'none'): ?>
+                     onclick="abrirPreviewWorker(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                     <?php endif; ?>>
+                    <?php if ($esImg): ?>
+                        <img src="<?= $prevB . $a['id'] ?>" alt="" style="width:100%;height:110px;object-fit:cover;" loading="lazy"
+                             onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi <?= getFileIcon($a['extension']) ?> text-muted',style:'font-size:2.5rem'}))">
+                    <?php else: ?>
+                        <i class="bi <?= getFileIcon($a['extension']) ?> text-muted" style="font-size:2.5rem;"></i>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body p-2">
+                    <p class="mb-1 fw-semibold text-truncate" title="<?= sanitize($a['nombre_original']) ?>"
+                       style="font-size:.75rem;color:var(--text-primary);">
+                        <?= sanitize(truncateText($a['nombre_original'], 26)) ?>
+                    </p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?>" style="font-size:.62rem;">
+                            <?= strtoupper(sanitize($a['extension'])) ?>
+                        </span>
+                        <span class="text-muted" style="font-size:.67rem;"><?= formatFileSize($a['tamano_bytes']) ?></span>
+                    </div>
+                </div>
+                <div class="card-footer p-1 d-flex gap-1 justify-content-end">
+                    <?php if ($ptG !== 'none'): ?>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirPreviewWorker(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= $ptG ?>')"
+                            title="Vista previa"><i class="bi bi-eye" style="font-size:.75rem;"></i></button>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/?page=worker/clients&action=download&id=<?= $a['id'] ?>"
+                       class="btn btn-sm btn-outline-secondary py-0 px-2" title="Descargar">
+                        <i class="bi bi-download" style="font-size:.75rem;"></i></a>
+                    <?php if ($puedeEditar): ?>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirModalEditar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>','<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                            title="Editar"><i class="bi bi-pencil" style="font-size:.75rem;"></i></button>
+                    <?php endif; ?>
+                    <?php if ($puedeEliminar): ?>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                            onclick="abrirModalEliminar(<?= $a['id'] ?>,'<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                            title="Eliminar"><i class="bi bi-trash" style="font-size:.75rem;"></i></button>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
 <?php endif; ?>
 
 
@@ -388,8 +495,90 @@ function previewTypeWorker(string $ext): string {
 <?php endif; ?>
 
 
+<style>
+.active-sort { background:var(--color-primary,#5ea84a)!important;color:#0d0d0d!important;border-color:var(--color-primary,#5ea84a)!important; }
+.file-card   { transition:transform .18s ease,box-shadow .18s ease; }
+.file-card:hover { transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.35); }
+</style>
 <script>
 const APP_URL_WORKER = '<?= APP_URL ?>';
+
+// ── Vista lista/grid ──────────────────────────────────────────────────────
+(function(){
+    let vistaWorker = localStorage.getItem('rk-view-worker-files') || 'lista';
+    function aplicarVistaWorker(v) {
+        vistaWorker = v;
+        localStorage.setItem('rk-view-worker-files', v);
+        const lista = document.getElementById('vistaListaWorker');
+        const grid  = document.getElementById('vistaGridWorker');
+        const btnL  = document.getElementById('btnVistaListaWorker');
+        const btnG  = document.getElementById('btnVistaGridWorker');
+        if (!lista || !grid) return;
+        if (v === 'grid') {
+            lista.classList.add('d-none'); grid.classList.remove('d-none');
+            btnL.classList.remove('active'); btnG.classList.add('active');
+        } else {
+            grid.classList.add('d-none'); lista.classList.remove('d-none');
+            btnG.classList.remove('active'); btnL.classList.add('active');
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() { aplicarVistaWorker(vistaWorker); aplicarOrdenWorker('nombre', false); });
+    document.getElementById('btnVistaListaWorker')?.addEventListener('click', function(){ aplicarVistaWorker('lista'); });
+    document.getElementById('btnVistaGridWorker')?.addEventListener('click',  function(){ aplicarVistaWorker('grid'); });
+})();
+
+// ── Ordenar ───────────────────────────────────────────────────────────────
+const sortDirWorker = { nombre:'asc', tipo:'asc', fecha:'desc' };
+let   sortActWorker = 'nombre';
+
+document.querySelectorAll('.sort-btn-worker').forEach(btn => {
+    btn.addEventListener('click', function(){
+        const campo = this.dataset.sort;
+        if (sortActWorker === campo) sortDirWorker[campo] = sortDirWorker[campo]==='asc'?'desc':'asc';
+        else sortActWorker = campo;
+        document.querySelectorAll('.sort-btn-worker').forEach(b=>b.classList.remove('active-sort'));
+        this.classList.add('active-sort');
+        aplicarOrdenWorker(campo, true);
+    });
+});
+
+function aplicarOrdenWorker(campo, conIcono) {
+    const dir = sortDirWorker[campo];
+    const tbody = document.querySelector('#tablaArchivosWorker tbody');
+    if (tbody) {
+        const filas = Array.from(tbody.querySelectorAll('tr'));
+        filas.sort((a,b) => compWorker(a.dataset[campo], b.dataset[campo], dir));
+        filas.forEach(f => tbody.appendChild(f));
+    }
+    const grid = document.getElementById('gridArchivosWorker');
+    if (grid) {
+        const items = Array.from(grid.querySelectorAll('.grid-item-worker'));
+        items.sort((a,b) => compWorker(a.dataset[campo], b.dataset[campo], dir));
+        items.forEach(i => grid.appendChild(i));
+    }
+}
+
+function compWorker(a, b, dir) {
+    a = (a||'').toLowerCase(); b = (b||'').toLowerCase();
+    const r = a < b ? -1 : a > b ? 1 : 0;
+    return dir==='asc' ? r : -r;
+}
+
+// ── Búsqueda ──────────────────────────────────────────────────────────────
+document.getElementById('buscarArchivoWorker')?.addEventListener('input', function(){
+    const term = this.value.toLowerCase();
+    let vis = 0;
+    document.querySelectorAll('#tablaArchivosWorker tbody tr').forEach(f => {
+        const m = f.textContent.toLowerCase().includes(term);
+        f.style.display = m ? '' : 'none';
+        if (m) vis++;
+    });
+    document.querySelectorAll('#gridArchivosWorker .grid-item-worker').forEach(i => {
+        i.style.display = i.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+    const c = document.getElementById('contadorArchivosWorker');
+    if (c) c.textContent = term ? vis : <?= count($archivos) ?>;
+});
 
 function abrirPreviewWorker(id, nombre, tipo) {
     const url   = APP_URL_WORKER + '/?page=files&action=preview&id=' + id;
