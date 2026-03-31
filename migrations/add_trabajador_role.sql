@@ -10,5 +10,4 @@ ALTER TABLE usuarios
     ADD COLUMN puede_eliminar_archivos TINYINT(1) NOT NULL DEFAULT 0
         COMMENT 'Permiso para eliminar archivos de clientes permanentemente';
 
--- Índice para consultas por rol
-CREATE INDEX IF NOT EXISTS idx_rol ON usuarios(rol);
+-- Nota: el índice idx_rol ya existe desde el schema.sql original.
