@@ -91,7 +91,9 @@ define('ALLOWED_EXTENSIONS', json_encode([
     // Audio
     'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a',
     // Archivos comprimidos
-    'zip', 'rar', '7z', 'tar', 'gz'
+    'zip', 'rar', '7z', 'tar', 'gz',
+    // Adobe
+    'ai', 'eps', 'psd'
 ]));
 
 // Tipos MIME permitidos
@@ -117,7 +119,9 @@ define('ALLOWED_MIME_TYPES', json_encode([
     'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac', 'audio/aac', 'audio/x-m4a',
     // Archivos comprimidos
     'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
-    'application/x-tar', 'application/gzip'
+    'application/x-tar', 'application/gzip',
+    // Adobe
+    'application/postscript', 'image/vnd.adobe.photoshop'
 ]));
 
 // Maximo de carpetas por cliente

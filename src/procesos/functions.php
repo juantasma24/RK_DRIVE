@@ -158,6 +158,10 @@ function getFileIcon($extension) {
         '7z'   => 'bi-file-zip',
         'tar'  => 'bi-file-zip',
         'gz'   => 'bi-file-zip',
+        // Adobe
+        'ai'  => 'bi-file-earmark-image',
+        'eps' => 'bi-file-earmark-image',
+        'psd' => 'bi-file-earmark-image',
         // Otros
         'txt'     => 'bi-file-text',
         'default' => 'bi-file-earmark'
@@ -203,6 +207,10 @@ function getFileColor($extension) {
         'zip' => 'warning',
         'rar' => 'warning',
         '7z' => 'warning',
+        // Adobe - Naranja
+        'ai'  => 'warning',
+        'eps' => 'warning',
+        'psd' => 'warning',
         // Por defecto
         'default' => 'secondary'
     ];

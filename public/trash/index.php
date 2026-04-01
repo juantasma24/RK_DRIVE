@@ -14,7 +14,7 @@
         </p>
     </div>
     <?php if (!empty($archivos)): ?>
-    <button class="btn btn-outline-danger" onclick="confirmarVaciarPapelera()">
+    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalVaciar">
         <i class="bi bi-trash3 me-2"></i>Vaciar Papelera
     </button>
     <?php endif; ?>
@@ -27,7 +27,7 @@
         <h5 class="mt-3">La papelera esta vacia</h5>
         <p class="text-muted">Los archivos eliminados apareceran aqui.</p>
         <a href="<?= APP_URL ?>/?page=folders" class="btn btn-primary mt-2">
-            <i class="bi bi-folder2-open me-2"></i>Ir a Mis Carpetas
+            <i class="bi bi-files me-2"></i>Ir a Mis Archivos
         </a>
     </div>
 </div>
@@ -60,7 +60,9 @@
                                 <?= sanitize(truncateText($archivo['nombre_original'], 40)) ?>
                             </span>
                         </td>
-                        <td class="small text-muted"><?= sanitize($archivo['carpeta_nombre']) ?></td>
+                        <td class="small text-muted">
+                            <?= $archivo['carpeta_nombre'] ? sanitize($archivo['carpeta_nombre']) : '<span class="fst-italic">Sin carpeta</span>' ?>
+                        </td>
                         <td class="small text-muted"><?= formatFileSize($archivo['tamano_bytes']) ?></td>
                         <td class="small text-muted"><?= formatRelativeDate($archivo['fecha_eliminacion']) ?></td>
                         <td class="text-end pe-3">
@@ -123,18 +125,45 @@
     </div>
 </div>
 
+<!-- Modal: Vaciar Papelera -->
+<div class="modal fade" id="modalVaciar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="<?= APP_URL ?>/?page=files&action=empty">
+                <?= csrfField() ?>
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-trash3 me-2"></i>Vaciar Papelera
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p style="color:var(--text-secondary);">
+                        ¿Eliminar permanentemente los
+                        <strong style="color:var(--text-primary);"><?= count($archivos) ?> archivo(s)</strong>
+                        de la papelera?
+                    </p>
+                    <p class="text-danger small mb-0">
+                        <i class="bi bi-exclamation-circle me-1"></i>
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>Vaciar Papelera
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function confirmarEliminar(id, nombre) {
     document.getElementById('formEliminar').action =
         '<?= APP_URL ?>/?page=files&action=delete&id=' + id;
     document.getElementById('eliminar_nombre').textContent = '"' + nombre + '"';
     new bootstrap.Modal(document.getElementById('modalEliminar')).show();
-}
-
-function confirmarVaciarPapelera() {
-    if (confirm('¿Vaciar toda la papelera? Esta accion no se puede deshacer.')) {
-        // Se implementara con AdminController o accion masiva
-        alert('Funcion proximamente disponible.');
-    }
 }
 </script>

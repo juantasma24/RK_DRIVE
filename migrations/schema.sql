@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS carpetas (
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS archivos (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    carpeta_id INT UNSIGNED NOT NULL,
+    carpeta_id INT UNSIGNED NULL DEFAULT NULL,
     usuario_id INT UNSIGNED NOT NULL,
     nombre_original VARCHAR(255) NOT NULL COMMENT 'Nombre original del archivo',
     nombre_fisico VARCHAR(255) NOT NULL COMMENT 'Nombre unico en el servidor',
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS archivos (
 
     CONSTRAINT fk_archivos_carpeta
         FOREIGN KEY (carpeta_id) REFERENCES carpetas(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
+        ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT fk_archivos_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         ON DELETE CASCADE ON UPDATE CASCADE
@@ -256,7 +256,7 @@ SELECT
     u.email AS usuario_email,
     u.rol AS usuario_rol
 FROM archivos a
-INNER JOIN carpetas c ON a.carpeta_id = c.id
+LEFT JOIN carpetas c ON a.carpeta_id = c.id
 INNER JOIN usuarios u ON a.usuario_id = u.id;
 
 -- Vista para estadisticas de almacenamiento por usuario

@@ -182,9 +182,9 @@ function validateUploadedFile($file, $maxSize = null) {
     $realMime = getMimeType($file['tmp_name']);
     $allowedMimes = json_decode(ALLOWED_MIME_TYPES, true);
 
-    // En Windows/XAMPP, finfo puede devolver application/octet-stream para archivos de texto.
-    // Si el MIME detectado es generico, usar el MIME por extension como fallback.
-    if ($realMime === 'application/octet-stream') {
+    // En Windows/XAMPP, finfo puede devolver application/octet-stream para archivos de texto,
+    // o application/x-empty para archivos vacios. Usar extension como fallback en ambos casos.
+    if ($realMime === 'application/octet-stream' || $realMime === 'application/x-empty') {
         $extForMime = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fallbackMime = getMimeTypeByExtension($extForMime);
         if ($fallbackMime !== 'application/octet-stream') {
@@ -294,6 +294,10 @@ function getMimeTypeByExtension($ext) {
         '7z' => 'application/x-7z-compressed',
         'tar' => 'application/x-tar',
         'gz' => 'application/gzip',
+        // Adobe
+        'ai'  => 'application/postscript',
+        'eps' => 'application/postscript',
+        'psd' => 'image/vnd.adobe.photoshop',
     ];
 
     return $mimeTypes[$ext] ?? 'application/octet-stream';

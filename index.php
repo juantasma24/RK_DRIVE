@@ -133,7 +133,8 @@ if (in_array($page, $workerRoutes) && !in_array($userRole, ['trabajador', 'admin
 }
 
 // Redirigir trabajadores que intenten acceder a rutas de cliente
-if ($isLoggedIn && $userRole === 'trabajador' && in_array($page, $clientRoutes)) {
+$clientRoutesRestrictedForWorker = array_diff($clientRoutes, ['profile', 'notifications']);
+if ($isLoggedIn && $userRole === 'trabajador' && in_array($page, $clientRoutesRestrictedForWorker)) {
     redirect('/?page=worker/clients');
 }
 
@@ -289,6 +290,11 @@ switch ($page) {
 // RENDERIZAR VISTA
 //=============================================================================
 
+// Inicializacion defensiva de viewData
+if (!is_array($viewData)) {
+    $viewData = [];
+}
+
 // Extraer datos para la vista
 extract($viewData);
 
@@ -312,9 +318,13 @@ if (file_exists($viewFile)) {
         include __DIR__ . '/src/components/footer.php';
     }
 } else {
-    // Vista no encontrada
+    // Vista no encontrada - con layout completo
     http_response_code(404);
+    $pageTitle = 'Pagina no encontrada';
+    $viewData['message'] = 'Lo sentimos, la pagina que buscas no existe o ha sido movida.';
+    include __DIR__ . '/src/components/header.php';
     include __DIR__ . '/public/errors/404.php';
+    include __DIR__ . '/src/components/footer.php';
 }
 
 //=============================================================================

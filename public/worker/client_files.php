@@ -284,7 +284,7 @@ function previewTypeWorker(string $ext): string {
                                 <!-- Vista previa -->
                                 <?php if ($ptW !== 'none'): ?>
                                 <button class="btn btn-sm btn-outline-secondary"
-                                        onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptW ?>')"
+                                        onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $ptW ?>')"
                                         title="Vista previa">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -299,8 +299,8 @@ function previewTypeWorker(string $ext): string {
                                 <button class="btn btn-sm btn-outline-secondary"
                                         onclick="abrirModalEditar(
                                             <?= $a['id'] ?>,
-                                            <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
-                                            <?= json_encode($a['descripcion'] ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+                                            <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>,
+                                            <?= htmlspecialchars(json_encode($a['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
                                         )"
                                         title="Editar">
                                     <i class="bi bi-pencil"></i>
@@ -311,7 +311,7 @@ function previewTypeWorker(string $ext): string {
                                 <button class="btn btn-sm btn-outline-danger"
                                         onclick="abrirModalEliminar(
                                             <?= $a['id'] ?>,
-                                            <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+                                            <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>
                                         )"
                                         title="Eliminar permanentemente">
                                     <i class="bi bi-trash"></i>
@@ -345,7 +345,7 @@ function previewTypeWorker(string $ext): string {
                             background:var(--surface-2,#1e1e1e);
                             cursor:<?= $ptG !== 'none' ? 'pointer' : 'default' ?>;"
                      <?php if ($ptG !== 'none'): ?>
-                     onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptG ?>')"
+                     onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $ptG ?>')"
                      <?php endif; ?>>
                     <?php if ($esImg): ?>
                         <img src="<?= $prevB . $a['id'] ?>" alt="" style="width:100%;height:110px;object-fit:cover;" loading="lazy"
@@ -369,7 +369,7 @@ function previewTypeWorker(string $ext): string {
                 <div class="card-footer p-1 d-flex gap-1 justify-content-end">
                     <?php if ($ptG !== 'none'): ?>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $ptG ?>')"
+                            onclick="abrirPreviewWorker(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $ptG ?>')"
                             title="Vista previa"><i class="bi bi-eye" style="font-size:.75rem;"></i></button>
                     <?php endif; ?>
                     <a href="<?= APP_URL ?>/?page=worker/clients&action=download&id=<?= $a['id'] ?>"
@@ -377,12 +377,12 @@ function previewTypeWorker(string $ext): string {
                         <i class="bi bi-download" style="font-size:.75rem;"></i></a>
                     <?php if ($puedeEditar): ?>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirModalEditar(<?= $a['id'] ?>,<?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,<?= json_encode($a['descripcion'] ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
+                            onclick="abrirModalEditar(<?= $a['id'] ?>,<?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>,<?= htmlspecialchars(json_encode($a['descripcion'] ?? ''), ENT_QUOTES, 'UTF-8') ?>)"
                             title="Editar"><i class="bi bi-pencil" style="font-size:.75rem;"></i></button>
                     <?php endif; ?>
                     <?php if ($puedeEliminar): ?>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2"
-                            onclick="abrirModalEliminar(<?= $a['id'] ?>,<?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
+                            onclick="abrirModalEliminar(<?= $a['id'] ?>,<?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
                             title="Eliminar"><i class="bi bi-trash" style="font-size:.75rem;"></i></button>
                     <?php endif; ?>
                 </div>

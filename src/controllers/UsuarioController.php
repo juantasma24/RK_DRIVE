@@ -46,6 +46,12 @@ class UsuarioController {
     private function actualizarPerfil($userId) {
         requireCSRFToken();
 
+        // Solo el admin puede modificar nombre y correo
+        if (!isAdmin()) {
+            setFlash('error', 'Solo el administrador puede modificar nombre y correo electronico.');
+            redirect('/?page=profile');
+        }
+
         $nombre = trim($_POST['nombre'] ?? '');
         $email  = trim($_POST['email'] ?? '');
 

@@ -64,18 +64,22 @@
                             <i class="bi bi-speedometer2"></i> Panel
                         </a>
                     </li>
+
+                    <?php if (!isWorker()): ?>
+                    <!-- Cliente: seccion Archivos (incluye carpetas y archivos sueltos) -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($page ?? '') === 'folders' ? 'active' : '' ?>"
                            href="<?= APP_URL ?>/folders">
-                            <i class="bi bi-folder"></i> Carpetas
+                            <i class="bi bi-files"></i> Archivos
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link <?= ($page ?? '') === 'trash' ? 'active' : '' ?>"
-                           href="<?= APP_URL ?>/trash">
+                           href="<?= APP_URL ?>/?page=trash">
                             <i class="bi bi-trash"></i> Papelera
                         </a>
                     </li>
+                    <?php endif; ?>
 
                     <?php if (isWorker()): ?>
                     <li class="nav-item">

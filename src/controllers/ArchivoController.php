@@ -23,6 +23,8 @@ class ArchivoController {
             case 'trash':    return $this->moveToTrash((int)$id);
             case 'restore':  return $this->restore((int)$id);
             case 'delete':   return $this->delete((int)$id);
+            case 'empty':    return $this->emptyTrash();
+            case 'edit':     return $this->edit((int)$id);
             default:         return $this->index();
         }
     }
@@ -56,7 +58,7 @@ class ArchivoController {
     }
 
     // =========================================================================
-    // SUBIR ARCHIVO
+    // SUBIR ARCHIVO (soporta carpeta o archivo suelto)
     // =========================================================================
 
     public function upload() {
@@ -67,24 +69,28 @@ class ArchivoController {
         requireCSRFToken();
 
         $userId    = getCurrentUserId();
-        $carpetaId = (int)($_POST['carpeta_id'] ?? 0);
+        $carpetaId = isset($_POST['carpeta_id']) && $_POST['carpeta_id'] !== '' ? (int)$_POST['carpeta_id'] : null;
         $descripcion = trim($_POST['descripcion'] ?? '');
 
-        if (!$carpetaId) {
-            setFlash('error', 'Carpeta no especificada.');
-            redirect('/?page=folders');
-        }
+        // Si se especificó carpeta, verificar que pertenece al usuario
+        $carpeta = null;
+        if ($carpetaId) {
+            $carpetaCheck = em()->getConnection()->executeQuery(
+                "SELECT id, activa FROM carpetas WHERE id = :cid AND usuario_id = :uid LIMIT 1",
+                ['cid' => $carpetaId, 'uid' => $userId]
+            )->fetchAssociative();
 
-        // Verificar que la carpeta pertenece al usuario
-        $carpeta = em()->find(\App\Entity\Carpeta::class, $carpetaId);
-        if (!$carpeta || !$carpeta->isActiva() || $carpeta->getUsuario()->getId() !== $userId) {
-            setFlash('error', 'Carpeta no encontrada.');
-            redirect('/?page=folders');
+            if (!$carpetaCheck || !$carpetaCheck['activa']) {
+                setFlash('error', 'Carpeta no encontrada.');
+                redirect('/?page=folders');
+            }
+
+            $carpeta = em()->find(\App\Entity\Carpeta::class, $carpetaId);
         }
 
         if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] === UPLOAD_ERR_NO_FILE) {
             setFlash('error', 'No se seleccionó ningún archivo.');
-            redirect("/?page=folders&action=show&id={$carpetaId}");
+            redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
         }
 
         $file = $_FILES['archivo'];
@@ -92,30 +98,34 @@ class ArchivoController {
         $validation = validateUploadedFile($file);
         if (!$validation['valid']) {
             setFlash('error', implode(' ', $validation['errors']));
-            redirect("/?page=folders&action=show&id={$carpetaId}");
+            redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
         }
 
         // Verificar espacio disponible
         $usuario = em()->find(\App\Entity\Usuario::class, $userId);
         if (((int)$usuario->getAlmacenamientoUsado() + $file['size']) > (int)$usuario->getAlmacenamientoMaximo()) {
             setFlash('error', 'No tienes suficiente espacio de almacenamiento.');
-            redirect("/?page=folders&action=show&id={$carpetaId}");
+            redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
         }
 
         $extension      = $validation['extension'];
-        $nombreOriginal = sanitizeFilename($file['name']);
+        $nombreOriginal = $this->resolveFilename(sanitizeFilename($file['name']), $carpetaId, $userId);
         $nombreFisico   = bin2hex(random_bytes(16)) . '.' . $extension;
         $rutaFisica     = generateSecurePath($userId, $nombreFisico);
 
         if (!move_uploaded_file($file['tmp_name'], $rutaFisica)) {
             setFlash('error', 'Error al mover el archivo al servidor.');
-            redirect("/?page=folders&action=show&id={$carpetaId}");
+            redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
         }
 
         try {
             $archivo = new \App\Entity\Archivo();
-            $archivo->setCarpeta($carpeta);
             $archivo->setUsuario($usuario);
+            if ($carpeta) {
+                $archivo->setCarpeta($carpeta);
+            } else {
+                $archivo->setCarpeta(null); // Archivo suelto
+            }
             $archivo->setNombreOriginal($nombreOriginal);
             $archivo->setNombreFisico($nombreFisico);
             $archivo->setTipoMime($validation['mime']);
@@ -134,7 +144,7 @@ class ArchivoController {
             setFlash('error', 'Error al registrar el archivo.');
         }
 
-        redirect("/?page=folders&action=show&id={$carpetaId}");
+        redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
     }
 
     // =========================================================================
@@ -245,7 +255,8 @@ class ArchivoController {
 
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId);
-        $carpetaId = $archivo->getCarpeta()->getId();
+        $carpeta   = $archivo->getCarpeta();
+        $carpetaId = $carpeta ? $carpeta->getId() : null;
 
         $archivo->setEnPapelera(true);
         $archivo->setFechaEliminacion(new \DateTimeImmutable());
@@ -254,7 +265,7 @@ class ArchivoController {
 
         logActivity($userId, 'file_trash', "Archivo a papelera: {$archivo->getNombreOriginal()}", 'archivo', $id);
         setFlash('success', "Archivo movido a la papelera.");
-        redirect("/?page=folders&action=show&id={$carpetaId}");
+        redirect($carpetaId ? "/?page=folders&action=show&id={$carpetaId}" : '/?page=folders');
     }
 
     // =========================================================================
@@ -266,7 +277,7 @@ class ArchivoController {
         $archivos = em()->getConnection()->executeQuery(
             "SELECT a.*, c.nombre AS carpeta_nombre
              FROM archivos a
-             INNER JOIN carpetas c ON a.carpeta_id = c.id
+             LEFT JOIN carpetas c ON a.carpeta_id = c.id
              WHERE a.usuario_id = :uid AND a.en_papelera = 1
              ORDER BY a.fecha_eliminacion DESC",
             ['uid' => $userId]
@@ -334,16 +345,139 @@ class ArchivoController {
     }
 
     // =========================================================================
+    // VACIAR PAPELERA
+    // =========================================================================
+
+    public function emptyTrash() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/?page=trash');
+        }
+
+        requireCSRFToken();
+
+        $userId = getCurrentUserId();
+
+        $archivos = em()->getConnection()->executeQuery(
+            "SELECT id, ruta_fisica FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
+            ['uid' => $userId]
+        )->fetchAllAssociative();
+
+        if (empty($archivos)) {
+            setFlash('info', 'La papelera ya estaba vacía.');
+            redirect('/?page=trash');
+        }
+
+        $eliminados = 0;
+        foreach ($archivos as $row) {
+            if (file_exists($row['ruta_fisica'])) {
+                unlink($row['ruta_fisica']);
+                $dir = dirname($row['ruta_fisica']);
+                if (is_dir($dir) && count(scandir($dir)) == 2) @rmdir($dir);
+            }
+            $eliminados++;
+        }
+
+        em()->getConnection()->executeStatement(
+            "DELETE FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
+            ['uid' => $userId]
+        );
+
+        logActivity($userId, 'trash_empty', "Papelera vaciada: {$eliminados} archivo(s) eliminados");
+        setFlash('success', "Papelera vaciada. {$eliminados} archivo(s) eliminados permanentemente.");
+        redirect('/?page=trash');
+    }
+
+    // =========================================================================
+    // EDITAR ARCHIVO (nombre y descripción)
+    // =========================================================================
+
+    public function edit($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('/?page=folders');
+        }
+
+        requireCSRFToken();
+
+        $userId  = getCurrentUserId();
+        $archivo = $this->findArchivoOrFail($id, $userId, false);
+
+        $nombreAnterior = $archivo->getNombreOriginal();
+        $nombre = trim($_POST['nombre'] ?? '');
+        $desc   = trim($_POST['descripcion'] ?? '');
+
+        if (empty($nombre)) {
+            setFlash('error', 'El nombre del archivo es obligatorio.');
+            redirect('/?page=folders');
+        }
+
+        if (strlen($nombre) > 255) {
+            setFlash('error', 'El nombre no puede superar los 255 caracteres.');
+            redirect('/?page=folders');
+        }
+
+        $archivo->setNombreOriginal(sanitizeString($nombre));
+        $archivo->setDescripcion(!empty($desc) ? sanitizeString($desc) : null);
+        $archivo->setFechaActualizacion(new \DateTimeImmutable());
+        em()->flush();
+
+        logActivity($userId, 'file_edit', "Archivo renombrado: {$nombreAnterior} → {$nombre}", 'archivo', $id);
+        setFlash('success', "Archivo actualizado correctamente.");
+
+        // Redirigir a la carpeta si tiene, sino a folders
+        $carpetaId = $archivo->getCarpeta()?->getId();
+        if ($carpetaId) {
+            redirect("/?page=folders&action=show&id={$carpetaId}");
+        } else {
+            redirect('/?page=folders');
+        }
+    }
+
+    // =========================================================================
     // HELPER PRIVADO
     // =========================================================================
 
-    private function findArchivoOrFail($id, $userId, $enPapelera = false): \App\Entity\Archivo {
-        $archivo = em()->find(\App\Entity\Archivo::class, $id);
+    private function resolveFilename(string $nombre, ?int $carpetaId, int $userId): string {
+        $ext  = pathinfo($nombre, PATHINFO_EXTENSION);
+        $base = $ext !== '' ? substr($nombre, 0, -(strlen($ext) + 1)) : $nombre;
 
-        if (!$archivo
-            || $archivo->getUsuario()->getId() !== $userId
-            || $archivo->isEnPapelera() !== $enPapelera
-        ) {
+        $conn  = em()->getConnection();
+        $where = $carpetaId ? 'carpeta_id = :cid' : 'carpeta_id IS NULL';
+
+        $existsQuery = "SELECT COUNT(*) FROM archivos
+                        WHERE usuario_id = :uid AND nombre_original = :nombre
+                          AND en_papelera = 0 AND {$where}";
+
+        $params = ['uid' => $userId, 'nombre' => $nombre];
+        if ($carpetaId) $params['cid'] = $carpetaId;
+
+        if (!(int)$conn->executeQuery($existsQuery, $params)->fetchOne()) {
+            return $nombre;
+        }
+
+        $counter = 1;
+        do {
+            $candidato = $base . ' (' . str_pad($counter, 2, '0', STR_PAD_LEFT) . ')' . ($ext !== '' ? '.' . $ext : '');
+            $params['nombre'] = $candidato;
+            $counter++;
+        } while ((int)$conn->executeQuery($existsQuery, $params)->fetchOne() && $counter <= 99);
+
+        return $candidato;
+    }
+
+    private function findArchivoOrFail($id, $userId, $enPapelera = false): \App\Entity\Archivo {
+        // Verificar pertenencia con query directa (evita problemas con Doctrine proxies)
+        $check = em()->getConnection()->executeQuery(
+            "SELECT id FROM archivos WHERE id = :id AND usuario_id = :uid AND en_papelera = :ep LIMIT 1",
+            ['id' => $id, 'uid' => $userId, 'ep' => $enPapelera ? 1 : 0]
+        )->fetchAssociative();
+
+        if (!$check) {
+            setFlash('error', 'Archivo no encontrado.');
+            redirect('/?page=folders');
+        }
+
+        $archivo = em()->find(\App\Entity\Archivo::class, $id);
+        if (!$archivo) {
             setFlash('error', 'Archivo no encontrado.');
             redirect('/?page=folders');
         }
