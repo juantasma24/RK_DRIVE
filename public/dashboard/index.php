@@ -142,7 +142,7 @@ $esAdmin = isAdmin();
      STAT CARDS — CLIENTE
 ====================================================================== -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-4">
+    <div class="col-sm-6 col-xl-3">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-primary-subtle text-primary">
@@ -155,7 +155,7 @@ $esAdmin = isAdmin();
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-4">
+    <div class="col-sm-6 col-xl-3">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-success-subtle text-success">
@@ -168,7 +168,7 @@ $esAdmin = isAdmin();
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-4">
+    <div class="col-sm-6 col-xl-3">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-danger-subtle text-danger">
@@ -181,7 +181,7 @@ $esAdmin = isAdmin();
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-4">
+    <div class="col-sm-6 col-xl-3">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-warning-subtle text-warning">
