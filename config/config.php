@@ -49,7 +49,7 @@ define('APP_URL', 'http://localhost/RK_DRIVE');
 define('APP_NAME', 'RK Marketing Drive');
 
 // Version de la aplicacion
-define('APP_VERSION', '1.2.0');
+define('APP_VERSION', '1.2.1');
 
 //=============================================================================
 // CONFIGURACION DE SESION
