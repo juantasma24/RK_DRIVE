@@ -80,16 +80,17 @@ $storagePercent = $usuario['almacenamiento_maximo'] > 0
 
     <!-- Columna derecha -->
     <div class="col-lg-8">
-        <!-- Formulario datos personales -->
+        <!-- Datos Personales -->
         <div class="card mb-4">
             <div class="card-header">
                 <i class="bi bi-person me-2"></i>Datos Personales
             </div>
             <div class="card-body">
+                <?php if (isAdmin()): ?>
+                <!-- Admin: puede editar nombre y email -->
                 <form method="POST" action="<?= APP_URL ?>/?page=profile">
                     <?= csrfField() ?>
                     <input type="hidden" name="accion" value="actualizar_perfil">
-
                     <div class="mb-3">
                         <label class="form-label">Nombre completo</label>
                         <input type="text" class="form-control" name="nombre"
@@ -109,6 +110,26 @@ $storagePercent = $usuario['almacenamiento_maximo'] > 0
                         <i class="bi bi-check-lg me-2"></i>Guardar Cambios
                     </button>
                 </form>
+                <?php else: ?>
+                <!-- Cliente / Trabajador: solo lectura -->
+                <div class="mb-3">
+                    <label class="form-label">Nombre completo</label>
+                    <input type="text" class="form-control" value="<?= sanitize($usuario['nombre']) ?>" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Correo electronico</label>
+                    <input type="email" class="form-control" value="<?= sanitize($usuario['email']) ?>" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" style="color:var(--text-dim);">Ultimo acceso</label>
+                    <input type="text" class="form-control"
+                           value="<?= formatDate($usuario['ultimo_acceso']) ?>" disabled>
+                </div>
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Para cambiar tu nombre o correo, contacta al administrador.
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 

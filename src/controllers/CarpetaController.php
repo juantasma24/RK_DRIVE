@@ -32,10 +32,20 @@ class CarpetaController {
     public function index() {
         $userId   = getCurrentUserId();
         $carpetas = $this->getCarpetasConStats($userId);
+
+        // Obtener archivos sueltos (sin carpeta)
+        $archivosSueltos = em()->getConnection()->executeQuery(
+            "SELECT a.* FROM archivos a
+             WHERE a.usuario_id = :uid AND a.en_papelera = 0 AND a.carpeta_id IS NULL
+             ORDER BY a.fecha_subida DESC",
+            ['uid' => $userId]
+        )->fetchAllAssociative();
+
         return [
-            'view'     => 'folders/index',
-            'carpetas' => $carpetas,
-            'limite'   => MAX_FOLDERS_PER_CLIENT,
+            'view'          => 'folders/index',
+            'carpetas'      => $carpetas,
+            'archivosSueltos' => $archivosSueltos,
+            'limite'        => MAX_FOLDERS_PER_CLIENT,
         ];
     }
 

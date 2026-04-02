@@ -25,7 +25,7 @@ function previewType(string $ext): string {
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
             <a href="<?= APP_URL ?>/?page=folders" style="color:var(--color-primary);">
-                <i class="bi bi-folder2-open me-1"></i>Mis Carpetas
+                <i class="bi bi-files me-1"></i>Mis Archivos
             </a>
         </li>
         <li class="breadcrumb-item active"><?= sanitize($carpeta['nombre']) ?></li>
@@ -66,11 +66,11 @@ function previewType(string $ext): string {
     <div class="card-body py-2 px-3">
         <div class="d-flex flex-wrap align-items-center gap-2">
 
-            <!-- Contador -->
+            <!-- Contador con mes y año -->
             <span class="text-muted small me-1">
                 <i class="bi bi-files me-1"></i>
                 <span id="contadorArchivos"><?= count($archivos) ?></span>
-                archivo<?= count($archivos) != 1 ? 's' : '' ?>
+                archivo<?= count($archivos) != 1 ? 's' : '' ?> - <?= date('F Y') ?>
             </span>
 
             <!-- Ordenar -->
@@ -156,7 +156,7 @@ function previewType(string $ext): string {
                             <div class="btn-group btn-group-sm">
                                 <?php if ($pt !== 'none'): ?>
                                 <button class="btn btn-outline-secondary"
-                                        onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
+                                        onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
                                         title="Vista previa">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -165,8 +165,13 @@ function previewType(string $ext): string {
                                    class="btn btn-outline-primary" title="Descargar">
                                     <i class="bi bi-download"></i>
                                 </a>
+                                <button class="btn btn-outline-secondary"
+                                        onclick="abrirModalEditarArchivo(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                                        title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                                 <button class="btn btn-outline-danger"
-                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
+                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
                                         title="Mover a papelera">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -200,7 +205,7 @@ function previewType(string $ext): string {
                      style="height:120px;overflow:hidden;border-radius:.5rem .5rem 0 0;
                             background:var(--surface-2,#1e1e1e);cursor:<?= $pt !== 'none' ? 'pointer' : 'default' ?>;"
                      <?php if ($pt !== 'none'): ?>
-                     onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
+                     onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
                      title="Vista previa"
                      <?php endif; ?>>
                     <?php if ($esImagen): ?>
@@ -242,7 +247,7 @@ function previewType(string $ext): string {
                 <div class="card-footer p-1 d-flex gap-1 justify-content-end">
                     <?php if ($pt !== 'none'): ?>
                     <button class="btn btn-sm btn-outline-secondary py-0 px-2"
-                            onclick="abrirPreview(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, '<?= $pt ?>')"
+                            onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
                             title="Vista previa">
                         <i class="bi bi-eye" style="font-size:.75rem;"></i>
                     </button>
@@ -251,8 +256,13 @@ function previewType(string $ext): string {
                        class="btn btn-sm btn-outline-primary py-0 px-2" title="Descargar">
                         <i class="bi bi-download" style="font-size:.75rem;"></i>
                     </a>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirModalEditarArchivo(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                            title="Editar">
+                        <i class="bi bi-pencil" style="font-size:.75rem;"></i>
+                    </button>
                     <button class="btn btn-sm btn-outline-danger py-0 px-2"
-                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= json_encode($a['nombre_original'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)"
+                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
                             title="Mover a papelera">
                         <i class="bi bi-trash" style="font-size:.75rem;"></i>
                     </button>
@@ -294,6 +304,46 @@ function previewType(string $ext): string {
 
 
 <!-- =====================================================================
+     MODAL: EDITAR ARCHIVO
+====================================================================== -->
+<div class="modal fade" id="modalEditarArchivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formEditarArchivo" action="">
+                <?= csrfField() ?>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i>Editar Archivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editar_nombre_archivo" class="form-label">
+                            Nombre <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="editar_nombre_archivo" name="nombre"
+                               maxlength="255" required>
+                    </div>
+                    <div class="mb-0">
+                        <label for="editar_desc_archivo" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
+                        <textarea class="form-control" id="editar_desc_archivo" name="descripcion"
+                                  rows="2" maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- =====================================================================
      MODAL: SUBIR ARCHIVO
 ====================================================================== -->
 <div class="modal fade" id="modalSubir" tabindex="-1">
@@ -310,11 +360,21 @@ function previewType(string $ext): string {
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="archivo_file" class="form-label">
-                            Archivo <span class="text-danger">*</span>
-                        </label>
-                        <input type="file" class="form-control" id="archivo_file" name="archivo" required>
-                        <div class="form-text">Tamano maximo: <?= formatFileSize(MAX_FILE_SIZE) ?></div>
+                        <label class="form-label">Archivo <span class="text-danger">*</span></label>
+                        <div id="dropZone" style="border:2px dashed var(--color-primary,#5ea84a);border-radius:.5rem;padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:background .2s,border-color .2s;">
+                            <i class="bi bi-cloud-upload" style="font-size:2rem;color:var(--color-primary,#5ea84a);"></i>
+                            <p class="mb-1 mt-1 small fw-semibold" style="color:var(--text-primary);">
+                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;">seleccionalo</span>
+                            </p>
+                            <p class="mb-2 small text-muted">Tamano maximo: <?= formatFileSize(MAX_FILE_SIZE) ?></p>
+                            <div id="dropNombre" class="d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="dropNombreTexto"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <input type="file" class="d-none" id="archivo_file" name="archivo" required>
                     </div>
                     <div class="mb-3">
                         <label for="archivo_desc" class="form-label">
@@ -573,6 +633,15 @@ function errorPreview() {
     return div;
 }
 
+// ── Editar archivo ──────────────────────────────────────────────────────
+function abrirModalEditarArchivo(id, nombre, descripcion) {
+    document.getElementById('formEditarArchivo').action =
+        APP_URL + '/?page=files&action=edit&id=' + id;
+    document.getElementById('editar_nombre_archivo').value = nombre;
+    document.getElementById('editar_desc_archivo').value = descripcion || '';
+    new bootstrap.Modal(document.getElementById('modalEditarArchivo')).show();
+}
+
 // Limpiar recursos al cerrar el modal
 document.getElementById('modalPreview')?.addEventListener('hidden.bs.modal', function () {
     document.getElementById('previewBody').innerHTML = '';
@@ -586,11 +655,59 @@ function confirmarMoverPapelera(id, nombre) {
     new bootstrap.Modal(document.getElementById('modalPapelera')).show();
 }
 
-// ── Progreso de subida ────────────────────────────────────────────────────
-document.getElementById('formSubir')?.addEventListener('submit', function () {
-    document.getElementById('uploadProgress').classList.remove('d-none');
-    document.getElementById('btnSubir').disabled = true;
-});
+// ── Drag & drop + progreso de subida ─────────────────────────────────────
+(function () {
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('archivo_file');
+    const dropLabel = document.getElementById('dropNombre');
+    const dropTexto = document.getElementById('dropNombreTexto');
+    const btnSubir  = document.getElementById('btnSubir');
+    if (!dropZone || !fileInput) return;
+    function mostrarArchivo(nombre) {
+        dropTexto.textContent = nombre;
+        dropLabel.classList.remove('d-none');
+        if (btnSubir) btnSubir.disabled = false;
+    }
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', function () {
+        if (this.files.length) mostrarArchivo(this.files[0].name);
+    });
+    ['dragenter','dragover'].forEach(ev => {
+        dropZone.addEventListener(ev, e => {
+            e.preventDefault();
+            dropZone.style.background = 'var(--color-primary-subtle, rgba(94,168,74,.12))';
+            dropZone.style.borderStyle = 'solid';
+        });
+    });
+    dropZone.addEventListener('dragleave', e => {
+        if (!dropZone.contains(e.relatedTarget)) {
+            dropZone.style.background = '';
+            dropZone.style.borderStyle = 'dashed';
+        }
+    });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.background = '';
+        dropZone.style.borderStyle = 'dashed';
+        const files = e.dataTransfer.files;
+        if (!files.length) return;
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        fileInput.files = dt.files;
+        mostrarArchivo(files[0].name);
+    });
+    document.getElementById('modalSubir')?.addEventListener('hidden.bs.modal', () => {
+        fileInput.value = '';
+        dropLabel.classList.add('d-none');
+        dropTexto.textContent = '';
+        dropZone.style.background = '';
+        dropZone.style.borderStyle = 'dashed';
+    });
+    document.getElementById('formSubir')?.addEventListener('submit', function () {
+        document.getElementById('uploadProgress').classList.remove('d-none');
+        if (btnSubir) btnSubir.disabled = true;
+    });
+})();
 </script>
 
 <style>

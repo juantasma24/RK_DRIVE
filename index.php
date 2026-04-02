@@ -101,7 +101,7 @@ if ($id !== null) {
 $publicRoutes = ['login', 'register', 'forgot-password', 'reset-password', 'logout'];
 $clientRoutes = ['dashboard', 'folders', 'files', 'trash', 'profile', 'notifications'];
 $adminRoutes  = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings', 'admin/clients'];
-$workerRoutes = ['worker/clients'];
+$workerRoutes = ['worker/clients', 'worker/dashboard'];
 
 //=============================================================================
 // VERIFICAR AUTENTICACION
@@ -133,7 +133,8 @@ if (in_array($page, $workerRoutes) && !in_array($userRole, ['trabajador', 'admin
 }
 
 // Redirigir trabajadores que intenten acceder a rutas de cliente
-if ($isLoggedIn && $userRole === 'trabajador' && in_array($page, $clientRoutes)) {
+$clientRoutesRestrictedForWorker = array_diff($clientRoutes, ['profile', 'notifications']);
+if ($isLoggedIn && $userRole === 'trabajador' && in_array($page, $clientRoutesRestrictedForWorker)) {
     redirect('/?page=worker/clients');
 }
 
@@ -231,6 +232,13 @@ switch ($page) {
         $viewData = $controller->index();
         break;
 
+    case 'theme':
+        requireAuth();
+        include __DIR__ . '/src/controllers/UsuarioController.php';
+        $controller = new UsuarioController();
+        $controller->saveTheme();
+        break; // saveTheme() hace exit()
+
     // Rutas de administrador
     case 'admin':
     case 'admin/users':
@@ -268,6 +276,13 @@ switch ($page) {
         $viewData = $controller->clients($action, $id);
         break;
 
+    case 'worker/dashboard':
+        $pageTitle = 'Panel de Clientes';
+        include __DIR__ . '/src/controllers/TrabajadorController.php';
+        $controller = new TrabajadorController();
+        $viewData = $controller->dashboard();
+        break;
+
     case 'worker/clients':
         $pageTitle = 'Archivos por Cliente';
         include __DIR__ . '/src/controllers/TrabajadorController.php';
@@ -288,6 +303,11 @@ switch ($page) {
 //=============================================================================
 // RENDERIZAR VISTA
 //=============================================================================
+
+// Inicializacion defensiva de viewData
+if (!is_array($viewData)) {
+    $viewData = [];
+}
 
 // Extraer datos para la vista
 extract($viewData);
@@ -312,9 +332,13 @@ if (file_exists($viewFile)) {
         include __DIR__ . '/src/components/footer.php';
     }
 } else {
-    // Vista no encontrada
+    // Vista no encontrada - con layout completo
     http_response_code(404);
+    $pageTitle = 'Pagina no encontrada';
+    $viewData['message'] = 'Lo sentimos, la pagina que buscas no existe o ha sido movida.';
+    include __DIR__ . '/src/components/header.php';
     include __DIR__ . '/public/errors/404.php';
+    include __DIR__ . '/src/components/footer.php';
 }
 
 //=============================================================================

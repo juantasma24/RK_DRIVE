@@ -72,9 +72,13 @@
                             <?php endif; ?>
                         </td>
                         <td class="small text-muted">
-                            <i class="bi bi-folder me-1"></i><?= (int)$u['total_carpetas'] ?>
-                            &nbsp;/&nbsp;
-                            <i class="bi bi-file-earmark me-1"></i><?= (int)$u['total_archivos'] ?>
+                            <?php if ($u['rol'] === 'cliente'): ?>
+                                <i class="bi bi-folder me-1"></i><?= (int)$u['total_carpetas'] ?>
+                                &nbsp;/&nbsp;
+                                <i class="bi bi-file-earmark me-1"></i><?= (int)$u['total_archivos'] ?>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <?php

@@ -14,8 +14,8 @@ class Archivo
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Carpeta::class)]
-    #[ORM\JoinColumn(name: 'carpeta_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
-    private Carpeta $carpeta;
+    #[ORM\JoinColumn(name: 'carpeta_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?Carpeta $carpeta = null;
 
     #[ORM\ManyToOne(targetEntity: Usuario::class)]
     #[ORM\JoinColumn(name: 'usuario_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
@@ -64,8 +64,8 @@ class Archivo
     }
 
     public function getId(): ?int { return $this->id; }
-    public function getCarpeta(): Carpeta { return $this->carpeta; }
-    public function setCarpeta(Carpeta $carpeta): void { $this->carpeta = $carpeta; }
+    public function getCarpeta(): ?Carpeta { return $this->carpeta; }
+    public function setCarpeta(?Carpeta $carpeta): void { $this->carpeta = $carpeta; }
     public function getUsuario(): Usuario { return $this->usuario; }
     public function setUsuario(Usuario $usuario): void { $this->usuario = $usuario; }
     public function getNombreOriginal(): string { return $this->nombreOriginal; }
@@ -96,7 +96,7 @@ class Archivo
     {
         return [
             'id'               => $this->id,
-            'carpeta_id'       => $this->carpeta->getId(),
+            'carpeta_id'       => $this->carpeta?->getId(),
             'usuario_id'       => $this->usuario->getId(),
             'nombre_original'  => $this->nombreOriginal,
             'nombre_fisico'    => $this->nombreFisico,

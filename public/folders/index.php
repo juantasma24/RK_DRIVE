@@ -1,116 +1,378 @@
 <?php
 /**
- * Vista: Lista de Carpetas
+ * Vista: Archivos (Lista unificada de carpetas y archivos sueltos)
  *
- * @var array $carpetas  Lista de carpetas con estadísticas
- * @var int   $limite    Máximo de carpetas permitidas
+ * @var array $carpetas       Lista de carpetas con estadísticas
+ * @var array $archivosSueltos Archivos sin carpeta (sueltos)
+ * @var int   $limite          Máximo de carpetas permitidas
  */
+
+// Clasifica el tipo de previsualización por extensión
+function previewType(string $ext): string {
+    $ext = strtolower($ext);
+    if (in_array($ext, ['jpg','jpeg','png','gif','webp','svg','bmp'])) return 'image';
+    if (in_array($ext, ['mp4','webm']))                                return 'video';
+    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))               return 'audio';
+    if ($ext === 'pdf')                                                return 'pdf';
+    if (in_array($ext, ['txt','csv']))                                 return 'text';
+    return 'none';
+}
+
 $totalCarpetas = count($carpetas);
+$totalArchivos = count($archivosSueltos);
+$totalGeneral  = $totalCarpetas + $totalArchivos;
 $puedCrear     = $totalCarpetas < $limite;
+
+// Obtener mes y año actual en español
+$_meses = ['January'=>'Enero','February'=>'Febrero','March'=>'Marzo','April'=>'Abril',
+           'May'=>'Mayo','June'=>'Junio','July'=>'Julio','August'=>'Agosto',
+           'September'=>'Septiembre','October'=>'Octubre','November'=>'Noviembre','December'=>'Diciembre'];
+$mesAnio = $_meses[date('F')] . ' de ' . date('Y');
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="mb-1"><i class="bi bi-folder2-open me-2 text-primary"></i>Mis Carpetas</h2>
-        <p class="text-muted mb-0"><?= $totalCarpetas ?> de <?= $limite ?> carpetas utilizadas</p>
+        <h2 class="mb-1"><i class="bi bi-files me-2 text-primary"></i>Archivos</h2>
+        <p class="text-muted mb-0"><?= $totalGeneral ?> archivos - <?= $mesAnio ?></p>
     </div>
-    <?php if ($puedCrear): ?>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
-        <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
-    </button>
-    <?php else: ?>
-    <button class="btn btn-secondary" disabled title="Has alcanzado el limite de carpetas">
-        <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
-    </button>
-    <?php endif; ?>
+    <div class="d-flex gap-2">
+        <?php if ($puedCrear): ?>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
+            <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
+        </button>
+        <?php else: ?>
+        <button class="btn btn-outline-secondary" disabled title="Has alcanzado el limite de carpetas">
+            <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
+        </button>
+        <?php endif; ?>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSubir">
+            <i class="bi bi-cloud-upload me-2"></i>Subir Archivo
+        </button>
+    </div>
 </div>
 
-<?php if (empty($carpetas)): ?>
+<?php if ($totalGeneral === 0): ?>
 <!-- Estado vacío -->
 <div class="card">
     <div class="card-body text-center py-5">
-        <i class="bi bi-folder2 text-muted" style="font-size:4rem;"></i>
-        <h5 class="mt-3">No tienes carpetas todavia</h5>
-        <p class="text-muted">Crea tu primera carpeta para empezar a organizar tus archivos.</p>
-        <?php if ($puedCrear): ?>
-        <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#modalCrear">
-            <i class="bi bi-folder-plus me-2"></i>Crear primera carpeta
-        </button>
-        <?php endif; ?>
+        <i class="bi bi-files text-muted" style="font-size:4rem;"></i>
+        <h5 class="mt-3">No tienes archivos todavia</h5>
+        <p class="text-muted">Sube tu primer archivo o crea una carpeta para empezar a organizar.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSubir">
+                <i class="bi bi-cloud-upload me-2"></i>Subir Archivo
+            </button>
+            <?php if ($puedCrear): ?>
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
+                <i class="bi bi-folder-plus me-2"></i>Crear Carpeta
+            </button>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
 <?php else: ?>
-<!-- Grid de carpetas -->
-<div class="row g-3">
-    <?php foreach ($carpetas as $carpeta): ?>
-    <div class="col-sm-6 col-lg-4 col-xl-3">
-        <div class="card folder-card h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>"
-                       class="folder-icon text-decoration-none">
-                        <i class="bi bi-folder-fill" style="font-size:2.5rem;"></i>
-                    </a>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-light" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <a class="dropdown-item"
-                                   href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>">
-                                    <i class="bi bi-folder2-open"></i>Abrir
+
+<!-- Barra de controles -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+
+            <!-- Contador -->
+            <span class="text-muted small me-1">
+                <i class="bi bi-files me-1"></i>
+                <span id="contadorArchivos"><?= $totalGeneral ?></span>
+                elemento<?= $totalGeneral != 1 ? 's' : '' ?>
+            </span>
+
+            <!-- Ordenar -->
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Ordenar:</span>
+                <button class="btn btn-sm btn-outline-secondary sort-btn active-sort" data-sort="nombre">
+                    <i class="bi bi-sort-alpha-down me-1"></i>Nombre
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn" data-sort="tipo">
+                    <i class="bi bi-funnel me-1"></i>Tipo
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn" data-sort="fecha">
+                    <i class="bi bi-calendar me-1"></i>Fecha
+                </button>
+            </div>
+
+            <!-- Spacer -->
+            <div class="flex-grow-1"></div>
+
+            <!-- Buscar -->
+            <div class="input-group input-group-sm" style="max-width:200px;">
+                <span class="input-group-text"><i class="bi bi-search" style="font-size:.8rem;"></i></span>
+                <input type="text" id="buscarArchivo" class="form-control"
+                       placeholder="Buscar..." style="font-size:.83rem;">
+            </div>
+
+            <!-- Toggle vista -->
+            <div class="btn-group btn-group-sm" role="group" aria-label="Vista">
+                <button id="btnVistLista" class="btn btn-outline-secondary active" title="Vista lista">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <button id="btnVistaGrid" class="btn btn-outline-secondary" title="Vista cuadricula">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     VISTA LISTA
+====================================================================== -->
+<div id="vistaLista" class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle" id="tablaArchivos">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Nombre</th>
+                        <th>Tipo</th>
+                        <th>Tamano</th>
+                        <th>Fecha</th>
+                        <th class="text-end pe-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Carpetas -->
+                    <?php foreach ($carpetas as $item): ?>
+                    <tr data-nombre="<?= strtolower(sanitize($item['nombre'])) ?>"
+                        data-tipo="carpeta"
+                        data-fecha="<?= $item['fecha_creacion'] ?>"
+                        class="folder-row">
+                        <td class="ps-3">
+                            <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $item['id'] ?>"
+                               class="text-decoration-none d-flex align-items-center gap-2">
+                                <i class="bi bi-folder-fill text-warning" style="font-size:1.5rem;"></i>
+                                <span class="fw-semibold small" title="<?= sanitize($item['nombre']) ?>">
+                                    <?= sanitize($item['nombre']) ?>
+                                </span>
+                            </a>
+                            <?php if (!empty($item['descripcion'])): ?>
+                            <br><small class="text-muted ms-4">
+                                <?= sanitize(truncateText($item['descripcion'], 60)) ?>
+                            </small>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning-subtle text-warning">
+                                <i class="bi bi-folder me-1"></i>Carpeta
+                            </span>
+                        </td>
+                        <td class="small text-muted">
+                            <i class="bi bi-file-earmark me-1"></i><?= $item['total_archivos'] ?> archivo<?= $item['total_archivos'] != 1 ? 's' : '' ?>
+                        </td>
+                        <td class="small text-muted"><?= formatDate($item['fecha_creacion']) ?></td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $item['id'] ?>"
+                                   class="btn btn-outline-primary" title="Abrir">
+                                    <i class="bi bi-folder2-open"></i>
                                 </a>
-                            </li>
-                            <li>
-                                <button class="dropdown-item"
-                                        onclick="abrirModalEditar(<?= $carpeta['id'] ?>, '<?= addslashes(sanitize($carpeta['nombre'])) ?>', '<?= addslashes(sanitize($carpeta['descripcion'] ?? '')) ?>')">
-                                    <i class="bi bi-pencil"></i>Renombrar
+                                <button class="btn btn-outline-secondary"
+                                        onclick="abrirModalEditarCarpeta(<?= $item['id'] ?>, '<?= addslashes(sanitize($item['nombre'])) ?>', '<?= addslashes(sanitize($item['descripcion'] ?? '')) ?>')"
+                                        title="Renombrar">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <button class="dropdown-item text-danger"
-                                        onclick="confirmarEliminar(<?= $carpeta['id'] ?>, '<?= addslashes(sanitize($carpeta['nombre'])) ?>', <?= (int)$carpeta['total_archivos'] ?>)">
-                                    <i class="bi bi-trash"></i>Eliminar
+                                <button class="btn btn-outline-danger"
+                                        onclick="confirmarEliminarCarpeta(<?= $item['id'] ?>, '<?= addslashes(sanitize($item['nombre'])) ?>', <?= (int)$item['total_archivos'] ?>)"
+                                        title="Eliminar">
+                                    <i class="bi bi-trash"></i>
                                 </button>
-                            </li>
-                        </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+
+                    <!-- Archivos sueltos -->
+                    <?php foreach ($archivosSueltos as $a):
+                        $pt = previewType($a['extension']);
+                    ?>
+                    <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+                        data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+                        data-fecha="<?= $a['fecha_subida'] ?>"
+                        class="file-row">
+                        <td class="ps-3">
+                            <i class="bi <?= getFileIcon($a['extension']) ?> me-2 text-muted fs-5"></i>
+                            <span class="fw-semibold small" title="<?= sanitize($a['nombre_original']) ?>">
+                                <?= sanitize(truncateText($a['nombre_original'], 40)) ?>
+                            </span>
+                            <?php if (!empty($a['descripcion'])): ?>
+                            <br><small class="text-muted">
+                                <?= sanitize(truncateText($a['descripcion'], 60)) ?>
+                            </small>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?> border border-<?= getFileColor($a['extension']) ?>-subtle">
+                                <?= strtoupper(sanitize($a['extension'])) ?>
+                            </span>
+                        </td>
+                        <td class="small text-muted"><?= formatFileSize($a['tamano_bytes']) ?></td>
+                        <td class="small text-muted"><?= formatDate($a['fecha_subida']) ?></td>
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <?php if ($pt !== 'none'): ?>
+                                <button class="btn btn-outline-secondary"
+                                        onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
+                                        title="Vista previa">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <?php endif; ?>
+                                <a href="<?= APP_URL ?>/?page=files&action=download&id=<?= $a['id'] ?>"
+                                   class="btn btn-outline-primary" title="Descargar">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button class="btn btn-outline-secondary"
+                                        onclick="abrirModalEditarArchivo(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                                        title="Renombrar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger"
+                                        onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
+                                        title="Mover a papelera">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================================
+     VISTA CUADRÍCULA
+====================================================================== -->
+<div id="vistaGrid" class="d-none">
+    <div class="row g-3" id="gridArchivos">
+        <!-- Carpetas en grid -->
+        <?php foreach ($carpetas as $item): ?>
+        <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item"
+             data-nombre="<?= strtolower(sanitize($item['nombre'])) ?>"
+             data-tipo="carpeta"
+             data-fecha="<?= $item['fecha_creacion'] ?>">
+            <div class="card h-100 folder-card">
+                <div class="card-body text-center py-4" style="cursor:pointer;"
+                     onclick="window.location='<?= APP_URL ?>/?page=folders&action=show&id=<?= $item['id'] ?>'">
+                    <i class="bi bi-folder-fill text-warning" style="font-size:3rem;"></i>
+                    <h6 class="card-title mt-2 text-truncate" title="<?= sanitize($item['nombre']) ?>">
+                        <?= sanitize($item['nombre']) ?>
+                    </h6>
+                    <small class="text-muted">
+                        <i class="bi bi-file-earmark me-1"></i><?= $item['total_archivos'] ?> archivo<?= $item['total_archivos'] != 1 ? 's' : '' ?>
+                    </small>
+                </div>
+                <div class="card-footer border-0 d-flex gap-1 justify-content-end p-2">
+                    <button class="btn btn-sm btn-outline-secondary"
+                            onclick="event.stopPropagation(); abrirModalEditarCarpeta(<?= $item['id'] ?>, '<?= addslashes(sanitize($item['nombre'])) ?>', '<?= addslashes(sanitize($item['descripcion'] ?? '')) ?>')"
+                            title="Renombrar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="event.stopPropagation(); confirmarEliminarCarpeta(<?= $item['id'] ?>, '<?= addslashes(sanitize($item['nombre'])) ?>', <?= (int)$item['total_archivos'] ?>)"
+                            title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+
+        <!-- Archivos sueltos en grid -->
+        <?php foreach ($archivosSueltos as $a):
+            $pt        = previewType($a['extension']);
+            $esImagen  = ($pt === 'image');
+            $previewBase = APP_URL . '/?page=files&action=preview&id=';
+        ?>
+        <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item"
+             data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
+             data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
+             data-fecha="<?= $a['fecha_subida'] ?>">
+            <div class="card h-100 file-card">
+
+                <!-- Thumbnail / Icono -->
+                <div class="file-card-thumb d-flex align-items-center justify-content-center"
+                     style="height:120px;overflow:hidden;border-radius:.5rem .5rem 0 0;
+                            background:var(--surface-2,#1e1e1e);cursor:<?= $pt !== 'none' ? 'pointer' : 'default' ?>;"
+                     <?php if ($pt !== 'none'): ?>
+                     onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
+                     title="Vista previa"
+                     <?php endif; ?>>
+                    <?php if ($esImagen): ?>
+                        <img src="<?= $previewBase . $a['id'] ?>"
+                             alt="<?= sanitize($a['nombre_original']) ?>"
+                             style="width:100%;height:120px;object-fit:cover;"
+                             loading="lazy"
+                             onerror="this.parentElement.innerHTML='<i class=\'bi <?= getFileIcon($a['extension']) ?> text-muted\' style=\'font-size:3rem;\'></i>'">
+                    <?php else: ?>
+                        <i class="bi <?= getFileIcon($a['extension']) ?> text-muted"
+                           style="font-size:3rem;"></i>
+                        <?php if ($pt !== 'none'): ?>
+                        <div class="position-absolute" style="top:8px;right:8px;">
+                            <span class="badge bg-dark bg-opacity-75">
+                                <i class="bi bi-eye-fill" style="font-size:.65rem;"></i>
+                            </span>
+                        </div>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card-body p-2">
+                    <p class="mb-1 small fw-semibold text-truncate"
+                       title="<?= sanitize($a['nombre_original']) ?>"
+                       style="color:var(--text-primary);font-size:.78rem;">
+                        <?= sanitize(truncateText($a['nombre_original'], 28)) ?>
+                    </p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-<?= getFileColor($a['extension']) ?>-subtle text-<?= getFileColor($a['extension']) ?>"
+                              style="font-size:.65rem;">
+                            <?= strtoupper(sanitize($a['extension'])) ?>
+                        </span>
+                        <span class="text-muted" style="font-size:.68rem;">
+                            <?= formatFileSize($a['tamano_bytes']) ?>
+                        </span>
                     </div>
                 </div>
 
-                <a href="<?= APP_URL ?>/?page=folders&action=show&id=<?= $carpeta['id'] ?>"
-                   class="text-decoration-none">
-                    <h6 class="card-title mb-1 text-truncate" title="<?= sanitize($carpeta['nombre']) ?>">
-                        <?= sanitize($carpeta['nombre']) ?>
-                    </h6>
-                </a>
-
-                <?php if (!empty($carpeta['descripcion'])): ?>
-                <p class="card-text text-muted small mb-2 text-truncate"
-                   title="<?= sanitize($carpeta['descripcion']) ?>">
-                    <?= sanitize($carpeta['descripcion']) ?>
-                </p>
-                <?php endif; ?>
-
-                <div class="d-flex justify-content-between align-items-center mt-auto pt-2"
-                     style="border-top:1px solid var(--border-subtle);">
-                    <span class="small text-muted">
-                        <i class="bi bi-file-earmark me-1"></i><?= $carpeta['total_archivos'] ?> archivo<?= $carpeta['total_archivos'] != 1 ? 's' : '' ?>
-                    </span>
-                    <span class="small text-muted"><?= formatFileSize($carpeta['tamano_total']) ?></span>
+                <div class="card-footer p-1 d-flex gap-1 justify-content-end">
+                    <?php if ($pt !== 'none'): ?>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirPreview(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>, '<?= $pt ?>')"
+                            title="Vista previa">
+                        <i class="bi bi-eye" style="font-size:.75rem;"></i>
+                    </button>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/?page=files&action=download&id=<?= $a['id'] ?>"
+                       class="btn btn-sm btn-outline-primary py-0 px-2" title="Descargar">
+                        <i class="bi bi-download" style="font-size:.75rem;"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                            onclick="abrirModalEditarArchivo(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>', '<?= addslashes(sanitize($a['descripcion'] ?? '')) ?>')"
+                            title="Renombrar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                            onclick="confirmarMoverPapelera(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
+                            title="Mover a papelera">
+                        <i class="bi bi-trash" style="font-size:.75rem;"></i>
+                    </button>
                 </div>
-            </div>
-            <div class="card-footer border-0 pt-0">
-                <small class="text-muted">
-                    <i class="bi bi-calendar3 me-1"></i><?= formatDate($carpeta['fecha_creacion'], 'd/m/Y') ?>
-                </small>
+
             </div>
         </div>
+        <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
 </div>
+
 <?php endif; ?>
 
 
@@ -158,10 +420,10 @@ $puedCrear     = $totalCarpetas < $limite;
 <!-- =====================================================================
      MODAL: EDITAR CARPETA
 ====================================================================== -->
-<div class="modal fade" id="modalEditar" tabindex="-1">
+<div class="modal fade" id="modalEditarCarpeta" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" id="formEditar" action="">
+            <form method="POST" id="formEditarCarpeta" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-pencil"></i>Renombrar Carpeta</h5>
@@ -169,17 +431,17 @@ $puedCrear     = $totalCarpetas < $limite;
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="editar_nombre" class="form-label">
+                        <label for="editar_nombre_carpeta" class="form-label">
                             Nombre <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-control" id="editar_nombre" name="nombre"
+                        <input type="text" class="form-control" id="editar_nombre_carpeta" name="nombre"
                                maxlength="255" required>
                     </div>
                     <div class="mb-0">
-                        <label for="editar_desc" class="form-label">
+                        <label for="editar_desc_carpeta" class="form-label">
                             Descripcion <span class="text-muted small fw-normal">(opcional)</span>
                         </label>
-                        <textarea class="form-control" id="editar_desc" name="descripcion"
+                        <textarea class="form-control" id="editar_desc_carpeta" name="descripcion"
                                   rows="2" maxlength="500"></textarea>
                     </div>
                 </div>
@@ -196,12 +458,52 @@ $puedCrear     = $totalCarpetas < $limite;
 
 
 <!-- =====================================================================
-     MODAL: CONFIRMAR ELIMINACIÓN
+     MODAL: EDITAR ARCHIVO
 ====================================================================== -->
-<div class="modal fade" id="modalEliminar" tabindex="-1">
+<div class="modal fade" id="modalEditarArchivo" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" id="formEliminar" action="">
+            <form method="POST" id="formEditarArchivo" action="">
+                <?= csrfField() ?>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i>Editar Archivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editar_nombre_archivo" class="form-label">
+                            Nombre <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="editar_nombre_archivo" name="nombre"
+                               maxlength="255" required>
+                    </div>
+                    <div class="mb-0">
+                        <label for="editar_desc_archivo" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
+                        <textarea class="form-control" id="editar_desc_archivo" name="descripcion"
+                                  rows="2" maxlength="500"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- =====================================================================
+     MODAL: CONFIRMAR ELIMINACIÓN CARPETA
+====================================================================== -->
+<div class="modal fade" id="modalEliminarCarpeta" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formEliminarCarpeta" action="">
                 <?= csrfField() ?>
                 <div class="modal-header">
                     <h5 class="modal-title text-danger"><i class="bi bi-trash"></i>Eliminar Carpeta</h5>
@@ -210,7 +512,7 @@ $puedCrear     = $totalCarpetas < $limite;
                 <div class="modal-body">
                     <p style="color:var(--text-secondary);">
                         ¿Estas seguro de que deseas eliminar la carpeta
-                        <strong id="eliminar_nombre" style="color:var(--text-primary);"></strong>?
+                        <strong id="eliminar_nombre_carpeta" style="color:var(--text-primary);"></strong>?
                     </p>
                     <div id="eliminar_aviso_archivos" class="alert alert-warning d-none">
                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -219,7 +521,7 @@ $puedCrear     = $totalCarpetas < $limite;
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger" id="btn_confirmar_eliminar">
+                    <button type="submit" class="btn btn-danger" id="btn_confirmar_eliminar_carpeta">
                         <i class="bi bi-trash"></i>Eliminar
                     </button>
                 </div>
@@ -229,22 +531,388 @@ $puedCrear     = $totalCarpetas < $limite;
 </div>
 
 
+<!-- =====================================================================
+     MODAL: SUBIR ARCHIVO
+====================================================================== -->
+<div class="modal fade" id="modalSubir" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="<?= APP_URL ?>/?page=files&action=upload"
+                  enctype="multipart/form-data" id="formSubir">
+                <?= csrfField() ?>
+                <input type="hidden" name="carpeta_id" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-cloud-upload me-2"></i>Subir Archivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div id="dropZone" style="
+                            border: 2px dashed var(--color-primary, #5ea84a);
+                            border-radius: .5rem;
+                            padding: 1.5rem 1rem;
+                            text-align: center;
+                            cursor: pointer;
+                            transition: background .2s, border-color .2s;">
+                            <i class="bi bi-cloud-upload" style="font-size:2rem;color:var(--color-primary,#5ea84a);"></i>
+                            <p class="mb-1 mt-1 small fw-semibold" style="color:var(--text-primary);">
+                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;">seleccionalo</span>
+                            </p>
+                            <p class="mb-2 small text-muted">Tamaño máximo: <?= formatFileSize(MAX_FILE_SIZE) ?></p>
+                            <div id="dropNombre" class="d-none">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                    <i class="bi bi-file-earmark-check me-1"></i>
+                                    <span id="dropNombreTexto"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <input type="file" class="d-none" id="archivo_file" name="archivo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="archivo_desc" class="form-label">
+                            Descripcion <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
+                        <input type="text" class="form-control" id="archivo_desc" name="descripcion"
+                               maxlength="255" placeholder="Descripcion breve del archivo">
+                    </div>
+                    <div class="mb-3">
+                        <label for="archivo_carpeta" class="form-label">
+                            Carpeta <span class="text-muted small fw-normal">(opcional)</span>
+                        </label>
+                        <select class="form-select" id="archivo_carpeta" name="carpeta_id_select">
+                            <option value="">-- Archivo suelto (sin carpeta) --</option>
+                            <?php foreach ($carpetas as $c): ?>
+                            <option value="<?= $c['id'] ?>"><?= sanitize($c['nombre']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div id="uploadProgress" class="d-none">
+                        <div class="progress" style="height:8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 style="width:100%"></div>
+                        </div>
+                        <small class="text-muted mt-1 d-block text-center">Subiendo archivo...</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubir">
+                        <i class="bi bi-cloud-upload me-1"></i>Subir
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- =====================================================================
+     MODAL: VISTA PREVIA
+====================================================================== -->
+<div class="modal fade" id="modalPreview" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-truncate me-3" id="previewNombre" style="max-width:70%;"></h6>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <a id="previewDescargar" href="#" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>Descargar
+                    </a>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 text-center" id="previewBody"
+                 style="min-height:300px;max-height:80vh;overflow:auto;
+                        background:var(--surface-1,#141414);display:flex;
+                        align-items:center;justify-content:center;">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =====================================================================
+     MODAL: CONFIRMAR MOVER A PAPELERA
+====================================================================== -->
+<div class="modal fade" id="modalPapelera" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formPapelera" action="">
+                <?= csrfField() ?>
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-trash me-2"></i>Mover a Papelera
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p style="color:var(--text-secondary);">
+                        ¿Mover <strong id="papelera_nombre" style="color:var(--text-primary);"></strong>
+                        a la papelera?
+                    </p>
+                    <p class="small mb-0 text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        El archivo podra recuperarse desde la papelera.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Mover a Papelera
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <script>
-function abrirModalEditar(id, nombre, descripcion) {
-    document.getElementById('formEditar').action =
-        '<?= APP_URL ?>/?page=folders&action=edit&id=' + id;
-    document.getElementById('editar_nombre').value = nombre;
-    document.getElementById('editar_desc').value   = descripcion;
-    new bootstrap.Modal(document.getElementById('modalEditar')).show();
+const APP_URL   = '<?= APP_URL ?>';
+let sortDir     = { nombre: 'asc', tipo: 'asc', fecha: 'desc' };
+let sortActual  = 'nombre';
+let vistaActual = localStorage.getItem('rk-view-files') || 'lista';
+
+// Función para determinar tipo de preview
+function previewType(ext) {
+    ext = ext.toLowerCase();
+    if (['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) return 'image';
+    if (['mp4','webm'].includes(ext)) return 'video';
+    if (['mp3','wav','ogg','aac','m4a'].includes(ext)) return 'audio';
+    if (ext === 'pdf') return 'pdf';
+    if (['txt','csv'].includes(ext)) return 'text';
+    return 'none';
 }
 
-function confirmarEliminar(id, nombre, totalArchivos) {
-    document.getElementById('formEliminar').action =
-        '<?= APP_URL ?>/?page=folders&action=delete&id=' + id;
-    document.getElementById('eliminar_nombre').textContent = '"' + nombre + '"';
+// ── Inicializar vista ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    aplicarVista(vistaActual);
+    aplicarOrden(sortActual, false);
+});
+
+// ── Toggle lista / grid ───────────────────────────────────────────────────
+document.getElementById('btnVistLista')?.addEventListener('click', function () {
+    aplicarVista('lista');
+});
+document.getElementById('btnVistaGrid')?.addEventListener('click', function () {
+    aplicarVista('grid');
+});
+
+function aplicarVista(vista) {
+    vistaActual = vista;
+    localStorage.setItem('rk-view-files', vista);
+    const lista = document.getElementById('vistaLista');
+    const grid  = document.getElementById('vistaGrid');
+    const btnL  = document.getElementById('btnVistLista');
+    const btnG  = document.getElementById('btnVistaGrid');
+    if (!lista || !grid) return;
+
+    if (vista === 'grid') {
+        lista.classList.add('d-none');
+        grid.classList.remove('d-none');
+        btnL?.classList.remove('active');
+        btnG?.classList.add('active');
+    } else {
+        grid.classList.add('d-none');
+        lista.classList.remove('d-none');
+        btnG?.classList.remove('active');
+        btnL?.classList.add('active');
+    }
+}
+
+// ── Ordenar ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const campo = this.dataset.sort;
+        if (sortActual === campo) {
+            sortDir[campo] = sortDir[campo] === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortActual = campo;
+        }
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active-sort'));
+        this.classList.add('active-sort');
+        aplicarOrden(campo, true);
+    });
+});
+
+function aplicarOrden(campo, conIcono) {
+    const dir = sortDir[campo];
+
+    // Ordenar filas de la tabla
+    const tbody = document.querySelector('#tablaArchivos tbody');
+    if (tbody) {
+        const filas = Array.from(tbody.querySelectorAll('tr'));
+        filas.sort((a, b) => comparar(a.dataset[campo], b.dataset[campo], dir));
+        filas.forEach(f => tbody.appendChild(f));
+    }
+
+    // Ordenar cards del grid
+    const grid = document.getElementById('gridArchivos');
+    if (grid) {
+        const items = Array.from(grid.querySelectorAll('.grid-item'));
+        items.sort((a, b) => comparar(a.dataset[campo], b.dataset[campo], dir));
+        items.forEach(i => grid.appendChild(i));
+    }
+
+    // Actualizar icono del botón activo
+    if (conIcono) {
+        document.querySelectorAll('.sort-btn').forEach(btn => {
+            const icons = { asc: 'bi-sort-alpha-down', desc: 'bi-sort-alpha-up' };
+            if (btn.dataset.sort === campo) {
+                const i = btn.querySelector('i');
+                if (i) i.className = 'bi ' + (dir === 'asc' ? icons.asc : icons.desc) + ' me-1';
+            }
+        });
+    }
+}
+
+function comparar(a, b, dir) {
+    a = (a || '').toLowerCase();
+    b = (b || '').toLowerCase();
+    const result = a < b ? -1 : a > b ? 1 : 0;
+    return dir === 'asc' ? result : -result;
+}
+
+// ── Búsqueda ──────────────────────────────────────────────────────────────
+document.getElementById('buscarArchivo')?.addEventListener('input', function () {
+    const term    = this.value.toLowerCase();
+    let visibles  = 0;
+
+    // Tabla
+    document.querySelectorAll('#tablaArchivos tbody tr').forEach(fila => {
+        const match = fila.textContent.toLowerCase().includes(term);
+        fila.style.display = match ? '' : 'none';
+        if (match) visibles++;
+    });
+
+    // Grid
+    document.querySelectorAll('#gridArchivos .grid-item').forEach(item => {
+        const match = item.textContent.toLowerCase().includes(term);
+        item.style.display = match ? '' : 'none';
+        if (match) visibles++;
+    });
+
+    const contador = document.getElementById('contadorArchivos');
+    if (contador) contador.textContent = visibles;
+});
+
+// ── Vista previa ──────────────────────────────────────────────────────────
+function abrirPreview(id, nombre, tipo) {
+    const url  = APP_URL + '/?page=files&action=preview&id=' + id;
+    const dlUrl = APP_URL + '/?page=files&action=download&id=' + id;
+    const body = document.getElementById('previewBody');
+    const title = document.getElementById('previewNombre');
+    const dl   = document.getElementById('previewDescargar');
+
+    title.textContent = nombre;
+    dl.href = dlUrl;
+    body.innerHTML = '<div class="p-4 text-muted"><i class="bi bi-hourglass-split me-2"></i>Cargando...</div>';
+
+    let contenido = '';
+
+    switch (tipo) {
+        case 'image':
+            contenido = `<img src="${url}" alt="${nombre}"
+                              style="max-width:100%;max-height:78vh;object-fit:contain;display:block;margin:auto;"
+                              onerror="this.replaceWith(errorPreview())">`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'video':
+            contenido = `<video controls autoplay
+                                style="max-width:100%;max-height:78vh;display:block;margin:auto;">
+                            <source src="${url}">
+                            Tu navegador no soporta este formato de video.
+                         </video>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'audio':
+            contenido = `<div class="p-5 w-100">
+                            <i class="bi bi-music-note-beamed text-primary" style="font-size:4rem;display:block;text-align:center;margin-bottom:1.5rem;"></i>
+                            <audio controls autoplay style="width:100%;max-width:500px;display:block;margin:auto;">
+                                <source src="${url}">
+                                Tu navegador no soporta este formato de audio.
+                            </audio>
+                         </div>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'pdf':
+            contenido = `<iframe src="${url}" style="width:100%;height:78vh;border:none;display:block;"></iframe>`;
+            body.innerHTML = contenido;
+            break;
+
+        case 'text':
+            fetch(url)
+                .then(r => {
+                    if (!r.ok) throw new Error('Error ' + r.status);
+                    return r.text();
+                })
+                .then(texto => {
+                    const pre = document.createElement('pre');
+                    pre.textContent = texto;
+                    pre.style.cssText = 'text-align:left;padding:1.5rem;margin:0;width:100%;' +
+                                        'max-height:78vh;overflow:auto;font-size:.83rem;' +
+                                        'background:var(--surface-1,#141414);color:var(--text-primary,#e0e0e0);' +
+                                        'white-space:pre-wrap;word-break:break-word;';
+                    body.innerHTML = '';
+                    body.appendChild(pre);
+                })
+                .catch(() => { body.innerHTML = errorPreview(); });
+            break;
+    }
+
+    new bootstrap.Modal(document.getElementById('modalPreview')).show();
+}
+
+function errorPreview() {
+    const div = document.createElement('div');
+    div.className = 'p-4 text-muted';
+    div.innerHTML = '<i class="bi bi-exclamation-circle me-2 text-warning"></i>No se pudo cargar la vista previa.';
+    return div;
+}
+
+// Limpiar recursos al cerrar el modal
+document.getElementById('modalPreview')?.addEventListener('hidden.bs.modal', function () {
+    document.getElementById('previewBody').innerHTML = '';
+});
+
+// ── Mover a papelera ──────────────────────────────────────────────────────
+function confirmarMoverPapelera(id, nombre) {
+    document.getElementById('formPapelera').action =
+        APP_URL + '/?page=files&action=trash&id=' + id;
+    document.getElementById('papelera_nombre').textContent = '"' + nombre + '"';
+    new bootstrap.Modal(document.getElementById('modalPapelera')).show();
+}
+
+// ── Editar carpeta ──────────────────────────────────────────────────────
+function abrirModalEditarCarpeta(id, nombre, descripcion) {
+    document.getElementById('formEditarCarpeta').action =
+        APP_URL + '/?page=folders&action=edit&id=' + id;
+    document.getElementById('editar_nombre_carpeta').value = nombre;
+    document.getElementById('editar_desc_carpeta').value = descripcion;
+    new bootstrap.Modal(document.getElementById('modalEditarCarpeta')).show();
+}
+
+// ── Editar archivo ──────────────────────────────────────────────────────
+function abrirModalEditarArchivo(id, nombre, descripcion) {
+    document.getElementById('formEditarArchivo').action =
+        APP_URL + '/?page=files&action=edit&id=' + id;
+    document.getElementById('editar_nombre_archivo').value = nombre;
+    document.getElementById('editar_desc_archivo').value = descripcion;
+    new bootstrap.Modal(document.getElementById('modalEditarArchivo')).show();
+}
+
+// ── Eliminar carpeta ──────────────────────────────────────────────────────
+function confirmarEliminarCarpeta(id, nombre, totalArchivos) {
+    document.getElementById('formEliminarCarpeta').action =
+        APP_URL + '/?page=folders&action=delete&id=' + id;
+    document.getElementById('eliminar_nombre_carpeta').textContent = '"' + nombre + '"';
 
     const aviso       = document.getElementById('eliminar_aviso_archivos');
-    const btnConfirmar = document.getElementById('btn_confirmar_eliminar');
+    const btnConfirmar = document.getElementById('btn_confirmar_eliminar_carpeta');
 
     if (totalArchivos > 0) {
         aviso.classList.remove('d-none');
@@ -254,6 +922,98 @@ function confirmarEliminar(id, nombre, totalArchivos) {
         btnConfirmar.disabled = false;
     }
 
-    new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    new bootstrap.Modal(document.getElementById('modalEliminarCarpeta')).show();
 }
+
+// ── Drag & Drop + progreso de subida ─────────────────────────────────────
+(function () {
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('archivo_file');
+    const dropLabel = document.getElementById('dropNombre');
+    const dropTexto = document.getElementById('dropNombreTexto');
+    const btnSubir  = document.getElementById('btnSubir');
+
+    if (!dropZone || !fileInput) return;
+
+    function mostrarArchivo(nombre) {
+        dropTexto.textContent = nombre;
+        dropLabel.classList.remove('d-none');
+        if (btnSubir) btnSubir.disabled = false;
+    }
+
+    // Click en la zona abre el selector
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Selección manual
+    fileInput.addEventListener('change', function () {
+        if (this.files.length) mostrarArchivo(this.files[0].name);
+    });
+
+    // Drag events
+    ['dragenter','dragover'].forEach(ev => {
+        dropZone.addEventListener(ev, e => {
+            e.preventDefault();
+            dropZone.style.background = 'var(--color-primary-subtle, rgba(94,168,74,.12))';
+            dropZone.style.borderStyle = 'solid';
+        });
+    });
+
+    dropZone.addEventListener('dragleave', e => {
+        if (!dropZone.contains(e.relatedTarget)) {
+            dropZone.style.background = '';
+            dropZone.style.borderStyle = 'dashed';
+        }
+    });
+
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.background = '';
+        dropZone.style.borderStyle = 'dashed';
+
+        const files = e.dataTransfer.files;
+        if (!files.length) return;
+
+        // Asignar al input
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        fileInput.files = dt.files;
+        mostrarArchivo(files[0].name);
+    });
+
+    // Reset al cerrar el modal
+    document.getElementById('modalSubir')?.addEventListener('hidden.bs.modal', () => {
+        fileInput.value = '';
+        dropLabel.classList.add('d-none');
+        dropTexto.textContent = '';
+        dropZone.style.background = '';
+        dropZone.style.borderStyle = 'dashed';
+    });
+
+    // Submit: sincronizar carpeta_id y mostrar progreso
+    document.getElementById('formSubir')?.addEventListener('submit', function () {
+        const selectVal  = document.getElementById('archivo_carpeta')?.value;
+        const hiddenInput = document.querySelector('input[name="carpeta_id"]');
+        if (hiddenInput && selectVal) hiddenInput.value = selectVal;
+        document.getElementById('uploadProgress').classList.remove('d-none');
+        if (btnSubir) btnSubir.disabled = true;
+    });
+})();
 </script>
+
+<style>
+.active-sort {
+    background: var(--color-primary, #5ea84a) !important;
+    color: #0d0d0d !important;
+    border-color: var(--color-primary, #5ea84a) !important;
+}
+.file-card, .folder-card {
+    transition: transform .18s ease, box-shadow .18s ease;
+}
+.file-card:hover, .folder-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.35);
+}
+.folder-row:hover {
+    background-color: var(--bs-table-hover-bg);
+}
+</style>

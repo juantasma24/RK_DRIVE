@@ -30,12 +30,16 @@ $esAdmin = isAdmin();
         </h2>
         <p class="text-muted mb-0">
             Bienvenido, <strong style="color:var(--text-primary);"><?= sanitize($_SESSION['user_name'] ?? '') ?></strong>.
-            <?= date('l, d \d\e F \d\e Y') ?>
+            <?php
+            $_dias   = ['Sunday'=>'Domingo','Monday'=>'Lunes','Tuesday'=>'Martes','Wednesday'=>'Miércoles','Thursday'=>'Jueves','Friday'=>'Viernes','Saturday'=>'Sábado'];
+            $_mesesD = ['January'=>'Enero','February'=>'Febrero','March'=>'Marzo','April'=>'Abril','May'=>'Mayo','June'=>'Junio','July'=>'Julio','August'=>'Agosto','September'=>'Septiembre','October'=>'Octubre','November'=>'Noviembre','December'=>'Diciembre'];
+            echo $_dias[date('l')] . ', ' . date('d') . ' de ' . $_mesesD[date('F')] . ' de ' . date('Y');
+            ?>
         </p>
     </div>
     <?php if (!$esAdmin): ?>
     <a href="<?= APP_URL ?>/?page=folders" class="btn btn-primary">
-        <i class="bi bi-folder2-open me-2"></i>Mis Carpetas
+        <i class="bi bi-files me-2"></i>Mis Archivos
     </a>
     <?php endif; ?>
 </div>
@@ -45,7 +49,7 @@ $esAdmin = isAdmin();
      STAT CARDS — ADMIN
 ====================================================================== -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-xl-4">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-primary-subtle text-primary">
@@ -58,7 +62,7 @@ $esAdmin = isAdmin();
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-xl-4">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-success-subtle text-success">
@@ -71,7 +75,7 @@ $esAdmin = isAdmin();
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-6 col-xl-4">
         <div class="card h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="stat-icon bg-warning-subtle text-warning">
@@ -80,19 +84,6 @@ $esAdmin = isAdmin();
                 <div>
                     <div class="fs-3 fw-bold" style="line-height:1.1;"><?= $totalArchivos ?></div>
                     <div class="small text-muted mt-1">Archivos en el sistema</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="stat-icon bg-info-subtle text-info">
-                    <i class="bi bi-hdd-stack fs-4"></i>
-                </div>
-                <div>
-                    <div class="fs-3 fw-bold" style="line-height:1.1;"><?= formatFileSize($almacenamiento['usado']) ?></div>
-                    <div class="small text-muted mt-1">Almacenamiento usado</div>
                 </div>
             </div>
         </div>

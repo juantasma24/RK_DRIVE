@@ -103,10 +103,13 @@ function truncateText($text, $length = 100, $append = '...') {
         return $text;
     }
 
-    $text = substr($text, 0, $length);
-    $text = substr($text, 0, strrpos($text, ' '));
+    $truncated  = substr($text, 0, $length);
+    $lastSpace  = strrpos($truncated, ' ');
+    if ($lastSpace !== false) {
+        $truncated = substr($truncated, 0, $lastSpace);
+    }
 
-    return $text . $append;
+    return $truncated . $append;
 }
 
 /**
@@ -158,6 +161,10 @@ function getFileIcon($extension) {
         '7z'   => 'bi-file-zip',
         'tar'  => 'bi-file-zip',
         'gz'   => 'bi-file-zip',
+        // Adobe
+        'ai'  => 'bi-file-earmark-image',
+        'eps' => 'bi-file-earmark-image',
+        'psd' => 'bi-file-earmark-image',
         // Otros
         'txt'     => 'bi-file-text',
         'default' => 'bi-file-earmark'
@@ -203,6 +210,10 @@ function getFileColor($extension) {
         'zip' => 'warning',
         'rar' => 'warning',
         '7z' => 'warning',
+        // Adobe - Naranja
+        'ai'  => 'warning',
+        'eps' => 'warning',
+        'psd' => 'warning',
         // Por defecto
         'default' => 'secondary'
     ];

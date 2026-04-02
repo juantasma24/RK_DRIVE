@@ -295,6 +295,15 @@ class AdminController {
 
         if (file_exists($rutaFisica)) unlink($rutaFisica);
 
+        $uid = $archivo->getUsuario()->getId();
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios SET almacenamiento_usado = (
+                SELECT COALESCE(SUM(tamano_bytes), 0)
+                FROM archivos WHERE usuario_id = :uid AND en_papelera = 0
+             ) WHERE id = :uid",
+            ['uid' => $uid]
+        );
+
         em()->remove($archivo);
         em()->flush();
 
@@ -347,7 +356,7 @@ class AdminController {
         $enPapelera = $_GET['en_papelera'] ?? '';
         if ($enPapelera === '1') {
             $filters['en_papelera'] = true;
-        } elseif ($enPapelera === '0') {
+        } else {
             $filters['en_papelera'] = false;
         }
 
@@ -481,31 +490,31 @@ class AdminController {
         }
 
         $usuarioId      = $archivo->getUsuario()->getId();
-        $rutaFisica     = $archivo->getRutaFisica();
         $nombreOriginal = $archivo->getNombreOriginal();
-        $tamano         = $archivo->getTamanoBytes();
 
-        if (file_exists($rutaFisica)) {
-            unlink($rutaFisica);
-        }
+        // Mover a papelera (no eliminacion permanente) para permitir restauracion
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios SET almacenamiento_usado = (
+                SELECT COALESCE(SUM(tamano_bytes), 0)
+                FROM archivos WHERE usuario_id = :uid AND en_papelera = 0
+             ) WHERE id = :uid",
+            ['uid' => $usuarioId]
+        );
 
-        // Descontar el espacio del almacenamiento del cliente
-        $usuario = $archivo->getUsuario();
-        $nuevoUsado = max(0, (int)$usuario->getAlmacenamientoUsado() - $tamano);
-        $usuario->setAlmacenamientoUsado((string)$nuevoUsado);
-
-        em()->remove($archivo);
+        $archivo->setEnPapelera(true);
+        $archivo->setFechaEliminacion(new \DateTimeImmutable());
+        $archivo->setFechaActualizacion(new \DateTimeImmutable());
         em()->flush();
 
         logActivity(
             getCurrentUserId(),
-            'admin_file_delete',
-            "Admin eliminó archivo: {$nombreOriginal} (cliente ID {$usuarioId})",
+            'admin_file_trash',
+            "Admin movió a papelera: {$nombreOriginal} (cliente ID {$usuarioId})",
             'archivo',
             $archivoId
         );
 
-        setFlash('success', "Archivo \"{$nombreOriginal}\" eliminado permanentemente.");
+        setFlash('success', "Archivo \"{$nombreOriginal}\" movido a la papelera.");
         redirect('/?page=admin/clients&action=view&id=' . $usuarioId);
     }
 
@@ -514,8 +523,11 @@ class AdminController {
     // =========================================================================
 
     public function logs() {
-        $filtroAccion  = sanitizeString($_GET['accion'] ?? '');
-        $filtroUsuario = sanitizeString($_GET['usuario'] ?? '');
+        $filtroAccion  = sanitizeString($_GET['accion']      ?? '');
+        $filtroUsuario = sanitizeString($_GET['usuario']     ?? '');
+        $filtroDesde   = sanitizeString($_GET['fecha_desde'] ?? '');
+        $filtroHasta   = sanitizeString($_GET['fecha_hasta'] ?? '');
+        $export        = ($_GET['action'] ?? '') === 'export';
 
         $sql    = "SELECT l.id, l.accion, l.descripcion, l.entidad_tipo,
                           l.ip_address, l.fecha,
@@ -533,16 +545,57 @@ class AdminController {
             $sql .= " AND (u.nombre LIKE :usuario OR u.email LIKE :usuario)";
             $params['usuario'] = '%' . $filtroUsuario . '%';
         }
+        if (!empty($filtroDesde)) {
+            $sql .= " AND l.fecha >= :desde";
+            $params['desde'] = $filtroDesde . ' 00:00:00';
+        }
+        if (!empty($filtroHasta)) {
+            $sql .= " AND l.fecha <= :hasta";
+            $params['hasta'] = $filtroHasta . ' 23:59:59';
+        }
 
-        $sql .= " ORDER BY l.fecha DESC LIMIT 300";
+        $sql .= " ORDER BY l.fecha DESC";
+
+        if (!$export) {
+            $sql .= " LIMIT 300";
+        }
 
         $logs = em()->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
+
+        if ($export) {
+            $filename = 'logs_rk_drive_' . date('Y-m-d_H-i') . '.csv';
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-cache, no-store');
+
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
+            fputcsv($out, ['Fecha', 'Usuario', 'Email', 'Accion', 'Descripcion', 'Entidad', 'IP']);
+            foreach ($logs as $log) {
+                fputcsv($out, [
+                    $log['fecha'],
+                    $log['usuario_nombre'] ?? 'Sistema',
+                    $log['usuario_email']  ?? '',
+                    $log['accion'],
+                    $log['descripcion']    ?? '',
+                    $log['entidad_tipo']   ?? '',
+                    $log['ip_address']     ?? '',
+                ]);
+            }
+            fclose($out);
+
+            logActivity(getCurrentUserId(), 'logs_export',
+                'Admin exportó logs a CSV (' . count($logs) . ' registros)', 'sistema', null);
+            exit;
+        }
 
         return [
             'view'          => 'admin/logs',
             'logs'          => $logs,
             'filtroAccion'  => $filtroAccion,
             'filtroUsuario' => $filtroUsuario,
+            'filtroDesde'   => $filtroDesde,
+            'filtroHasta'   => $filtroHasta,
         ];
     }
 
@@ -554,10 +607,26 @@ class AdminController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             requireCSRFToken();
 
-            $campos = ['max_file_size', 'max_storage_client', 'max_folders_client',
-                       'login_attempts', 'lockout_time', 'session_lifetime'];
+            // max_file_size llega en MB, se guarda en bytes
+            if (!empty($_POST['max_file_size'])) {
+                $mb = max(1, (int)$_POST['max_file_size']);
+                em()->getConnection()->executeStatement(
+                    "UPDATE configuracion_sistema SET valor = :v WHERE clave = 'max_file_size'",
+                    ['v' => $mb * 1048576]
+                );
+            }
 
-            foreach ($campos as $clave) {
+            // max_storage_client llega en GB, se guarda en bytes
+            if (!empty($_POST['max_storage_client'])) {
+                $gb = max(0.1, (float)$_POST['max_storage_client']);
+                em()->getConnection()->executeStatement(
+                    "UPDATE configuracion_sistema SET valor = :v WHERE clave = 'max_storage_client'",
+                    ['v' => (int)round($gb * 1073741824)]
+                );
+            }
+
+            $camposInt = ['max_folders_client', 'login_attempts', 'lockout_time', 'session_lifetime'];
+            foreach ($camposInt as $clave) {
                 if (isset($_POST[$clave])) {
                     $valor = (int)$_POST[$clave];
                     if ($valor > 0) {

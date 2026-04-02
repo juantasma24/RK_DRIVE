@@ -34,6 +34,9 @@ class Usuario
     #[ORM\Column(type: 'boolean', options: ['default' => true])]
     private bool $activo = true;
 
+    #[ORM\Column(name: 'preferencia_tema', type: 'string', length: 10, options: ['default' => 'dark'])]
+    private string $preferenciaTema = 'dark';
+
     #[ORM\Column(name: 'token_recuperacion', type: 'string', length: 64, nullable: true)]
     private ?string $tokenRecuperacion = null;
 
@@ -82,6 +85,8 @@ class Usuario
     public function setAlmacenamientoMaximo(string $bytes): void { $this->almacenamientoMaximo = $bytes; }
     public function isActivo(): bool { return $this->activo; }
     public function setActivo(bool $activo): void { $this->activo = $activo; }
+    public function getPreferenciaTema(): string { return $this->preferenciaTema; }
+    public function setPreferenciaTema(string $tema): void { $this->preferenciaTema = in_array($tema, ['dark', 'light']) ? $tema : 'dark'; }
     public function getTokenRecuperacion(): ?string { return $this->tokenRecuperacion; }
     public function setTokenRecuperacion(?string $token): void { $this->tokenRecuperacion = $token; }
     public function getTokenExpiracion(): ?\DateTimeImmutable { return $this->tokenExpiracion; }

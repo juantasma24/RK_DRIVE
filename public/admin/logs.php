@@ -5,7 +5,20 @@
  * @var array  $logs           Lista de registros de actividad
  * @var string $filtroAccion   Filtro de búsqueda por acción
  * @var string $filtroUsuario  Filtro de búsqueda por usuario
+ * @var string $filtroDesde    Fecha inicio (YYYY-MM-DD)
+ * @var string $filtroHasta    Fecha fin (YYYY-MM-DD)
  */
+$hayFiltros = $filtroAccion || $filtroUsuario || $filtroDesde || $filtroHasta;
+
+// Construir URL de exportación con los filtros activos
+$exportParams = http_build_query(array_filter([
+    'page'        => 'admin/logs',
+    'action'      => 'export',
+    'accion'      => $filtroAccion,
+    'usuario'     => $filtroUsuario,
+    'fecha_desde' => $filtroDesde,
+    'fecha_hasta' => $filtroHasta,
+]));
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -13,6 +26,9 @@
         <h2 class="mb-1"><i class="bi bi-journal-text me-2 text-primary"></i>Logs de Actividad</h2>
         <p class="text-muted mb-0"><?= count($logs) ?> registros encontrados</p>
     </div>
+    <a href="<?= APP_URL ?>/?<?= $exportParams ?>" class="btn btn-outline-success">
+        <i class="bi bi-download me-2"></i>Exportar CSV
+    </a>
 </div>
 
 <!-- Filtros -->
@@ -20,25 +36,35 @@
     <div class="card-body">
         <form method="GET" action="<?= APP_URL ?>/" class="row g-3 align-items-end">
             <input type="hidden" name="page" value="admin/logs">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Filtrar por accion</label>
                 <input type="text" class="form-control" name="accion"
                        value="<?= sanitize($filtroAccion) ?>"
-                       placeholder="Ej: login, upload, delete...">
+                       placeholder="login, upload, delete...">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Filtrar por usuario</label>
                 <input type="text" class="form-control" name="usuario"
                        value="<?= sanitize($filtroUsuario) ?>"
                        placeholder="Nombre o email...">
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
+            <div class="col-md-2">
+                <label class="form-label">Desde</label>
+                <input type="date" class="form-control" name="fecha_desde"
+                       value="<?= sanitize($filtroDesde) ?>">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hasta</label>
+                <input type="date" class="form-control" name="fecha_hasta"
+                       value="<?= sanitize($filtroHasta) ?>">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
                     <i class="bi bi-search me-1"></i>Buscar
                 </button>
-                <?php if ($filtroAccion || $filtroUsuario): ?>
-                <a href="<?= APP_URL ?>/?page=admin/logs" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg me-1"></i>Limpiar
+                <?php if ($hayFiltros): ?>
+                <a href="<?= APP_URL ?>/?page=admin/logs" class="btn btn-outline-secondary" title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
                 </a>
                 <?php endif; ?>
             </div>
