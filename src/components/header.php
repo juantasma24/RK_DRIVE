@@ -65,8 +65,15 @@
                         </a>
                     </li>
 
-                    <?php if (!isWorker()): ?>
-                    <!-- Cliente: seccion Archivos (incluye carpetas y archivos sueltos) -->
+                    <?php if (isAdmin()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= ($page ?? '') === 'admin/users' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/admin/users">
+                            <i class="bi bi-people"></i> Usuarios
+                        </a>
+                    </li>
+                    <?php elseif (!isWorker()): ?>
+                    <!-- Cliente: carpetas y archivos sueltos -->
                     <li class="nav-item">
                         <a class="nav-link <?= ($page ?? '') === 'folders' ? 'active' : '' ?>"
                            href="<?= APP_URL ?>/folders">
@@ -92,21 +99,11 @@
 
                     <?php if (isAdmin()): ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle <?= str_starts_with($page ?? '', 'admin') ? 'active' : '' ?>"
+                        <a class="nav-link dropdown-toggle <?= (str_starts_with($page ?? '', 'admin') && ($page ?? '') !== 'admin/users') ? 'active' : '' ?>"
                            href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-gear"></i> Administracion
                         </a>
                         <ul class="dropdown-menu">
-                            <li>
-                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/users">
-                                    <i class="bi bi-people"></i>Usuarios
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="<?= APP_URL ?>/admin/files">
-                                    <i class="bi bi-files"></i>Archivos
-                                </a>
-                            </li>
                             <li>
                                 <a class="dropdown-item" href="<?= APP_URL ?>/admin/clients">
                                     <i class="bi bi-folder2-open"></i>Archivos por Cliente
@@ -124,6 +121,12 @@
                                 </a>
                             </li>
                         </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?= ($page ?? '') === 'trash' ? 'active' : '' ?>"
+                           href="<?= APP_URL ?>/?page=trash">
+                            <i class="bi bi-trash"></i> Papelera
+                        </a>
                     </li>
                     <?php endif; ?>
                 </ul>
@@ -165,7 +168,8 @@
                         </ul>
                     </li>
 
-                    <!-- Storage indicator -->
+                    <!-- Storage indicator: solo para clientes -->
+                    <?php if (!isAdmin() && !isWorker()): ?>
                     <li class="nav-item d-none d-xl-flex align-items-center ms-1">
                         <?php
                         $storageUsed    = $_SESSION['storage_used'] ?? 0;
@@ -182,6 +186,7 @@
                             <small class="text-muted ms-1"><?= $storagePercent ?>%</small>
                         </div>
                     </li>
+                    <?php endif; ?>
 
                     <!-- User profile dropdown -->
                     <li class="nav-item dropdown ms-1">

@@ -226,9 +226,13 @@ class TrabajadorController {
             unlink($rutaFisica);
         }
 
-        $clienteEntity = $archivo->getUsuario();
-        $nuevoUsado = max(0, (int)$clienteEntity->getAlmacenamientoUsado() - $tamano);
-        $clienteEntity->setAlmacenamientoUsado((string)$nuevoUsado);
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios SET almacenamiento_usado = (
+                SELECT COALESCE(SUM(tamano_bytes), 0)
+                FROM archivos WHERE usuario_id = :uid AND en_papelera = 0
+             ) WHERE id = :uid",
+            ['uid' => $usuarioId]
+        );
 
         em()->remove($archivo);
         em()->flush();

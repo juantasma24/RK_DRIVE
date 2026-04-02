@@ -43,7 +43,7 @@ class AuthController {
 
                         // Redirigir segun rol
                         if ($result['user']['rol'] === 'admin') {
-                            redirect('/?page=admin');
+                            redirect('/?page=dashboard');
                         } elseif ($result['user']['rol'] === 'trabajador') {
                             redirect('/?page=worker/clients');
                         } else {

@@ -286,7 +286,36 @@ class ArchivoController {
     // =========================================================================
 
     public function trash() {
-        $userId   = getCurrentUserId();
+        $userId = getCurrentUserId();
+
+        if (isAdmin()) {
+            $rows = em()->getConnection()->executeQuery(
+                "SELECT a.*, c.nombre AS carpeta_nombre,
+                        u.id AS cliente_id, u.nombre AS cliente_nombre
+                 FROM archivos a
+                 LEFT JOIN carpetas c ON a.carpeta_id = c.id
+                 INNER JOIN usuarios u ON a.usuario_id = u.id
+                 WHERE a.en_papelera = 1 AND u.rol = 'cliente'
+                 ORDER BY u.nombre ASC, a.fecha_eliminacion DESC"
+            )->fetchAllAssociative();
+
+            // Agrupar por cliente
+            $porCliente = [];
+            foreach ($rows as $archivo) {
+                $cid = $archivo['cliente_id'];
+                if (!isset($porCliente[$cid])) {
+                    $porCliente[$cid] = ['nombre' => $archivo['cliente_nombre'], 'archivos' => []];
+                }
+                $porCliente[$cid]['archivos'][] = $archivo;
+            }
+
+            return [
+                'view'       => 'trash/index',
+                'archivos'   => $rows,
+                'porCliente' => $porCliente,
+            ];
+        }
+
         $archivos = em()->getConnection()->executeQuery(
             "SELECT a.*, c.nombre AS carpeta_nombre
              FROM archivos a
@@ -316,12 +345,22 @@ class ArchivoController {
         $userId  = getCurrentUserId();
         $archivo = $this->findArchivoOrFail($id, $userId, true);
 
+        $ownerId = $archivo->getUsuario()->getId();
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios SET almacenamiento_usado = (
+                SELECT COALESCE(SUM(tamano_bytes), 0)
+                FROM archivos WHERE usuario_id = :uid AND en_papelera = 0
+             ) WHERE id = :uid",
+            ['uid' => $ownerId]
+        );
+
         $archivo->setEnPapelera(false);
         $archivo->setFechaEliminacion(null);
         $archivo->setFechaActualizacion(new \DateTimeImmutable());
         em()->flush();
 
-        logActivity($userId, 'file_restore', "Archivo restaurado: {$archivo->getNombreOriginal()}", 'archivo', $id);
+        $actor = isAdmin() ? 'Admin restauró' : 'Archivo restaurado';
+        logActivity($userId, 'file_restore', "{$actor}: {$archivo->getNombreOriginal()}", 'archivo', $id);
         setFlash('success', "Archivo \"{$archivo->getNombreOriginal()}\" restaurado.");
         redirect('/?page=trash');
     }
@@ -370,10 +409,18 @@ class ArchivoController {
 
         $userId = getCurrentUserId();
 
-        $archivos = em()->getConnection()->executeQuery(
-            "SELECT id, ruta_fisica FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
-            ['uid' => $userId]
-        )->fetchAllAssociative();
+        if (isAdmin()) {
+            $archivos = em()->getConnection()->executeQuery(
+                "SELECT a.id, a.ruta_fisica FROM archivos a
+                 INNER JOIN usuarios u ON a.usuario_id = u.id
+                 WHERE a.en_papelera = 1 AND u.rol = 'cliente'"
+            )->fetchAllAssociative();
+        } else {
+            $archivos = em()->getConnection()->executeQuery(
+                "SELECT id, ruta_fisica FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
+                ['uid' => $userId]
+            )->fetchAllAssociative();
+        }
 
         if (empty($archivos)) {
             setFlash('info', 'La papelera ya estaba vacía.');
@@ -390,12 +437,20 @@ class ArchivoController {
             $eliminados++;
         }
 
-        em()->getConnection()->executeStatement(
-            "DELETE FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
-            ['uid' => $userId]
-        );
+        if (isAdmin()) {
+            em()->getConnection()->executeStatement(
+                "DELETE a FROM archivos a
+                 INNER JOIN usuarios u ON a.usuario_id = u.id
+                 WHERE a.en_papelera = 1 AND u.rol = 'cliente'"
+            );
+        } else {
+            em()->getConnection()->executeStatement(
+                "DELETE FROM archivos WHERE usuario_id = :uid AND en_papelera = 1",
+                ['uid' => $userId]
+            );
+        }
 
-        logActivity($userId, 'trash_empty', "Papelera vaciada: {$eliminados} archivo(s) eliminados");
+        logActivity($userId, 'trash_empty', "Papelera vaciada: {$eliminados} archivo(s) eliminados permanentemente");
         setFlash('success', "Papelera vaciada. {$eliminados} archivo(s) eliminados permanentemente.");
         redirect('/?page=trash');
     }
@@ -478,21 +533,28 @@ class ArchivoController {
     }
 
     private function findArchivoOrFail($id, $userId, $enPapelera = false): \App\Entity\Archivo {
-        // Verificar pertenencia con query directa (evita problemas con Doctrine proxies)
-        $check = em()->getConnection()->executeQuery(
-            "SELECT id FROM archivos WHERE id = :id AND usuario_id = :uid AND en_papelera = :ep LIMIT 1",
-            ['id' => $id, 'uid' => $userId, 'ep' => $enPapelera ? 1 : 0]
-        )->fetchAssociative();
+        // Admin puede acceder a cualquier archivo; cliente solo a los suyos
+        if (isAdmin()) {
+            $check = em()->getConnection()->executeQuery(
+                "SELECT id FROM archivos WHERE id = :id AND en_papelera = :ep LIMIT 1",
+                ['id' => $id, 'ep' => $enPapelera ? 1 : 0]
+            )->fetchAssociative();
+        } else {
+            $check = em()->getConnection()->executeQuery(
+                "SELECT id FROM archivos WHERE id = :id AND usuario_id = :uid AND en_papelera = :ep LIMIT 1",
+                ['id' => $id, 'uid' => $userId, 'ep' => $enPapelera ? 1 : 0]
+            )->fetchAssociative();
+        }
 
         if (!$check) {
             setFlash('error', 'Archivo no encontrado.');
-            redirect('/?page=folders');
+            redirect('/?page=trash');
         }
 
         $archivo = em()->find(\App\Entity\Archivo::class, $id);
         if (!$archivo) {
             setFlash('error', 'Archivo no encontrado.');
-            redirect('/?page=folders');
+            redirect('/?page=trash');
         }
 
         return $archivo;

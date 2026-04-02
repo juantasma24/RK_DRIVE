@@ -33,24 +33,32 @@ $val = fn(string $key, $default = '') => $config[$key]['valor'] ?? $default;
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">
-                            Tamano maximo por archivo
-                            <span class="text-muted small fw-normal">(bytes)</span>
+                            Tamaño maximo por archivo
+                            <span class="text-muted small fw-normal">(MB)</span>
                         </label>
-                        <input type="number" class="form-control" name="max_file_size"
-                               value="<?= (int)$val('max_file_size', 524288000) ?>" min="1">
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="max_file_size"
+                                   value="<?= (int)round((int)$val('max_file_size', 524288000) / 1048576) ?>"
+                                   min="1" step="1">
+                            <span class="input-group-text">MB</span>
+                        </div>
                         <div class="form-text">
-                            Valor actual: <?= formatFileSize((int)$val('max_file_size', 524288000)) ?>
+                            Equivale a <?= formatFileSize((int)$val('max_file_size', 524288000)) ?>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">
                             Almacenamiento maximo por cliente
-                            <span class="text-muted small fw-normal">(bytes)</span>
+                            <span class="text-muted small fw-normal">(GB)</span>
                         </label>
-                        <input type="number" class="form-control" name="max_storage_client"
-                               value="<?= (int)$val('max_storage_client', 2147483648) ?>" min="1">
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="max_storage_client"
+                                   value="<?= number_format((int)$val('max_storage_client', 2147483648) / 1073741824, 1) ?>"
+                                   min="0.1" step="0.1">
+                            <span class="input-group-text">GB</span>
+                        </div>
                         <div class="form-text">
-                            Valor actual: <?= formatFileSize((int)$val('max_storage_client', 2147483648)) ?>
+                            Equivale a <?= formatFileSize((int)$val('max_storage_client', 2147483648)) ?>
                         </div>
                     </div>
                     <div class="mb-0">
