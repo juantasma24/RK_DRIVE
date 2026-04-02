@@ -556,7 +556,7 @@ $mesAnio = $_meses[date('F')] . ' de ' . date('Y');
                             transition: background .2s, border-color .2s;">
                             <i class="bi bi-cloud-upload" style="font-size:2rem;color:var(--color-primary,#5ea84a);"></i>
                             <p class="mb-1 mt-1 small fw-semibold" style="color:var(--text-primary);">
-                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;" onclick="document.getElementById('archivo_file').click()">seleccionalo</span>
+                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;">seleccionalo</span>
                             </p>
                             <p class="mb-2 small text-muted">Tamaño máximo: <?= formatFileSize(MAX_FILE_SIZE) ?></p>
                             <div id="dropNombre" class="d-none">

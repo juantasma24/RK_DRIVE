@@ -364,7 +364,7 @@ function previewType(string $ext): string {
                         <div id="dropZone" style="border:2px dashed var(--color-primary,#5ea84a);border-radius:.5rem;padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:background .2s,border-color .2s;">
                             <i class="bi bi-cloud-upload" style="font-size:2rem;color:var(--color-primary,#5ea84a);"></i>
                             <p class="mb-1 mt-1 small fw-semibold" style="color:var(--text-primary);">
-                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;" onclick="document.getElementById('archivo_file').click()">seleccionalo</span>
+                                Arrastra tu archivo aqui o <span style="color:var(--color-primary,#5ea84a);text-decoration:underline;cursor:pointer;">seleccionalo</span>
                             </p>
                             <p class="mb-2 small text-muted">Tamano maximo: <?= formatFileSize(MAX_FILE_SIZE) ?></p>
                             <div id="dropNombre" class="d-none">
