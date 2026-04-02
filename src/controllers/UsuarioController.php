@@ -43,6 +43,30 @@ class UsuarioController {
         ];
     }
 
+    public function saveTheme() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            exit;
+        }
+        requireCSRFToken();
+
+        $tema = $_POST['tema'] ?? '';
+        if (!in_array($tema, ['dark', 'light'])) {
+            http_response_code(400);
+            exit;
+        }
+
+        $userId = getCurrentUserId();
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios SET preferencia_tema = :tema WHERE id = :id",
+            ['tema' => $tema, 'id' => $userId]
+        );
+        $_SESSION['user_theme'] = $tema;
+
+        http_response_code(204);
+        exit;
+    }
+
     private function actualizarPerfil($userId) {
         requireCSRFToken();
 

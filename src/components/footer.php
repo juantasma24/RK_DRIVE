@@ -51,6 +51,17 @@
             btn.addEventListener('click', function () {
                 var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
                 applyTheme(next);
+
+                // Guardar en BD para persistir por usuario
+                var token = document.querySelector('meta[name="csrf-token"]');
+                fetch('<?= APP_URL ?>/?page=theme', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRF-Token': token ? token.content : ''
+                    },
+                    body: 'csrf_token=' + encodeURIComponent(token ? token.content : '') + '&tema=' + encodeURIComponent(next)
+                });
             });
         }
     })();

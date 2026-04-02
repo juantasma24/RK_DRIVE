@@ -61,6 +61,7 @@ function authenticateUser($email, $password) {
             'rol'                   => $user->getRol(),
             'almacenamiento_usado'  => (int)$user->getAlmacenamientoUsado(),
             'almacenamiento_maximo' => (int)$user->getAlmacenamientoMaximo(),
+            'preferencia_tema'      => $user->getPreferenciaTema(),
         ]
     ];
 }
@@ -74,6 +75,7 @@ function loginUser($user) {
     $_SESSION['user_role']   = $user['rol'];
     $_SESSION['storage_used']= (int)$user['almacenamiento_usado'];
     $_SESSION['storage_max'] = (int)$user['almacenamiento_maximo'];
+    $_SESSION['user_theme']  = $user['preferencia_tema'] ?? 'dark';
     $_SESSION['logged_in_at']= time();
 
     logActivity($user['id'], 'login', 'Inicio de sesion exitoso', 'usuario', $user['id']);

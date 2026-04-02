@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     almacenamiento_usado    BIGINT UNSIGNED DEFAULT 0    COMMENT 'Bytes utilizados (actualizado por triggers)',
     almacenamiento_maximo   BIGINT UNSIGNED DEFAULT 2147483648 COMMENT 'Bytes maximos (2 GB por defecto)',
     activo                  TINYINT(1)      DEFAULT 1,
+    preferencia_tema        VARCHAR(10)     NOT NULL DEFAULT 'dark' COMMENT 'Tema visual preferido: dark o light',
     puede_editar_archivos   TINYINT(1)      NOT NULL DEFAULT 0 COMMENT 'Solo trabajadores: editar metadatos de archivos de clientes',
     puede_eliminar_archivos TINYINT(1)      NOT NULL DEFAULT 0 COMMENT 'Solo trabajadores: eliminar archivos de clientes',
     token_recuperacion      VARCHAR(64)     NULL COMMENT 'Token para recuperar contrasena',
@@ -362,5 +363,24 @@ SET almacenamiento_usado = (
 SET SQL_SAFE_UPDATES = 1;
 
 -- =============================================================================
--- FIN DEL ESQUEMA — v2.0.0
+-- COLUMNAS AÑADIDAS EN v2.1.0 (safe para BDs existentes)
+-- =============================================================================
+
+-- preferencia_tema: tema visual por usuario (dark/light)
+SET @col_exists = (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'usuarios'
+      AND COLUMN_NAME  = 'preferencia_tema'
+);
+SET @alter_sql = IF(@col_exists = 0,
+    "ALTER TABLE usuarios ADD COLUMN preferencia_tema VARCHAR(10) NOT NULL DEFAULT 'dark' COMMENT 'Tema visual preferido: dark o light' AFTER activo",
+    'SELECT 1'
+);
+PREPARE _stmt FROM @alter_sql;
+EXECUTE _stmt;
+DEALLOCATE PREPARE _stmt;
+
+-- =============================================================================
+-- FIN DEL ESQUEMA — v2.1.0
 -- =============================================================================

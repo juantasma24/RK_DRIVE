@@ -25,11 +25,12 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?= APP_URL ?>/public/css/style.css?v=<?= APP_VERSION ?>">
 
-    <!-- Aplicar tema guardado antes de render para evitar flash -->
+    <!-- Aplicar tema del usuario (sesión PHP como fuente autoritativa) -->
     <script>
         (function(){
-            var t = localStorage.getItem('rk-theme') || 'dark';
+            var t = <?= json_encode($_SESSION['user_theme'] ?? 'dark') ?>;
             document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem('rk-theme', t);
         })();
     </script>
 

@@ -232,6 +232,13 @@ switch ($page) {
         $viewData = $controller->index();
         break;
 
+    case 'theme':
+        requireAuth();
+        include __DIR__ . '/src/controllers/UsuarioController.php';
+        $controller = new UsuarioController();
+        $controller->saveTheme();
+        break; // saveTheme() hace exit()
+
     // Rutas de administrador
     case 'admin':
     case 'admin/users':
