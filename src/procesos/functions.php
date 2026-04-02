@@ -103,10 +103,13 @@ function truncateText($text, $length = 100, $append = '...') {
         return $text;
     }
 
-    $text = substr($text, 0, $length);
-    $text = substr($text, 0, strrpos($text, ' '));
+    $truncated  = substr($text, 0, $length);
+    $lastSpace  = strrpos($truncated, ' ');
+    if ($lastSpace !== false) {
+        $truncated = substr($truncated, 0, $lastSpace);
+    }
 
-    return $text . $append;
+    return $truncated . $append;
 }
 
 /**
