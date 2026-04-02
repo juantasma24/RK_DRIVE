@@ -1641,3 +1641,11 @@ code {
     .rk-404-code { font-size: 4.5rem; }
     .rk-404-card { padding: 2.5rem 1.5rem; }
 }
+
+/* ── Sort button activo (vistas de archivos y clientes) ── */
+.active-sort,
+.active-sort-clientes {
+    background: var(--primary) !important;
+    color: #0d0d0d !important;
+    border-color: var(--primary) !important;
+}

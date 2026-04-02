@@ -7,17 +7,6 @@
  */
 
 $previewBase = APP_URL . '/?page=files&action=preview&id=';
-
-// Clasifica el tipo de previsualización por extensión
-function previewType(string $ext): string {
-    $ext = strtolower($ext);
-    if (in_array($ext, ['jpg','jpeg','png','gif','webp','svg','bmp'])) return 'image';
-    if (in_array($ext, ['mp4','webm']))                                return 'video';
-    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))               return 'audio';
-    if ($ext === 'pdf')                                                return 'pdf';
-    if (in_array($ext, ['txt','csv']))                                 return 'text';
-    return 'none';
-}
 ?>
 
 <!-- Breadcrumb -->
@@ -129,7 +118,7 @@ function previewType(string $ext): string {
                 </thead>
                 <tbody>
                     <?php foreach ($archivos as $a):
-                        $pt = previewType($a['extension']);
+                        $pt = getPreviewType($a['extension']);
                     ?>
                     <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
                         data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
@@ -191,7 +180,7 @@ function previewType(string $ext): string {
 <div id="vistaGrid" class="d-none">
     <div class="row g-3" id="gridArchivos">
         <?php foreach ($archivos as $a):
-            $pt        = previewType($a['extension']);
+            $pt        = getPreviewType($a['extension']);
             $esImagen  = ($pt === 'image');
         ?>
         <div class="col-6 col-sm-4 col-md-3 col-xl-2 grid-item"
@@ -383,12 +372,15 @@ function previewType(string $ext): string {
                         <input type="text" class="form-control" id="archivo_desc" name="descripcion"
                                maxlength="255" placeholder="Descripcion breve del archivo">
                     </div>
-                    <div id="uploadProgress" class="d-none">
-                        <div class="progress" style="height:8px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated"
-                                 style="width:100%"></div>
+                    <div id="uploadProgress" class="d-none mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Subiendo archivo...</small>
+                            <small id="uploadPercent" class="text-muted">0%</small>
                         </div>
-                        <small class="text-muted mt-1 d-block text-center">Subiendo archivo...</small>
+                        <div class="progress" style="height:6px;">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar" style="width:0%"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -703,19 +695,42 @@ function confirmarMoverPapelera(id, nombre) {
         dropZone.style.background = '';
         dropZone.style.borderStyle = 'dashed';
     });
-    document.getElementById('formSubir')?.addEventListener('submit', function () {
-        document.getElementById('uploadProgress').classList.remove('d-none');
-        if (btnSubir) btnSubir.disabled = true;
-    });
+    // Submit: subir con XHR mostrando progreso real
+    var formSubir = document.getElementById('formSubir');
+    if (formSubir) {
+        formSubir.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!fileInput.files.length) return;
+
+            var progressDiv = document.getElementById('uploadProgress');
+            var progressBar = document.getElementById('uploadProgressBar');
+            var progressPct = document.getElementById('uploadPercent');
+            if (progressDiv) progressDiv.classList.remove('d-none');
+            if (btnSubir) btnSubir.disabled = true;
+
+            var xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function(ev) {
+                if (ev.lengthComputable && progressBar && progressPct) {
+                    var pct = Math.round((ev.loaded / ev.total) * 100);
+                    progressBar.style.width = pct + '%';
+                    progressPct.textContent = pct + '%';
+                }
+            });
+            xhr.addEventListener('load', function() {
+                window.location.reload();
+            });
+            xhr.addEventListener('error', function() {
+                if (progressDiv) progressDiv.classList.add('d-none');
+                if (btnSubir) btnSubir.disabled = false;
+            });
+            xhr.open('POST', formSubir.action);
+            xhr.send(new FormData(formSubir));
+        });
+    }
 })();
 </script>
 
 <style>
-.active-sort {
-    background: var(--color-primary, #5ea84a) !important;
-    color: #0d0d0d !important;
-    border-color: var(--color-primary, #5ea84a) !important;
-}
 .file-card {
     transition: transform .18s ease, box-shadow .18s ease;
 }

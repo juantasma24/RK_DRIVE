@@ -141,12 +141,28 @@ $exportParams = http_build_query(array_filter([
             </table>
         </div>
     </div>
-    <?php if (count($logs) >= 300): ?>
-    <div class="card-footer text-center">
-        <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>
-            Se muestran los ultimos 300 registros. Usa los filtros para acotar resultados.
-        </small>
+    <?php if ($totalPaginas > 1): ?>
+    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <small class="text-muted"><?= $totalRegistros ?> registros totales</small>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <?php for ($i = 1; $i <= $totalPaginas; $i++): ?>
+                <?php
+                $params = array_filter([
+                    'page'       => 'admin/logs',
+                    'accion'     => $filtroAccion,
+                    'usuario'    => $filtroUsuario,
+                    'fecha_desde'=> $filtroDesde,
+                    'fecha_hasta'=> $filtroHasta,
+                    'p'          => $i,
+                ]);
+                ?>
+                <li class="page-item <?= $i === $paginaActual ? 'active' : '' ?>">
+                    <a class="page-link" href="<?= APP_URL ?>/?<?= http_build_query($params) ?>"><?= $i ?></a>
+                </li>
+                <?php endfor; ?>
+            </ul>
+        </nav>
     </div>
     <?php endif; ?>
 </div>

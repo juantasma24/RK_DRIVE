@@ -10,7 +10,7 @@
 // =============================================================================
 
 const APP_CONFIG = {
-    baseUrl: window.location.origin + window.location.pathname.replace(/\/$/, ''),
+    baseUrl: window.APP_URL || window.location.origin,
     maxFileSize: 500 * 1024 * 1024, // 500MB
     maxFilesPerUpload: 10,
     allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'zip', 'rar', '7z', 'tar', 'gz']
@@ -313,13 +313,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Cerrar alertas automaticamente
-    setTimeout(() => {
-        document.querySelectorAll('.alert-dismissible').forEach(alert => {
-            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-            bsAlert.close();
-        });
-    }, 5000);
+    // Cerrar alertas de éxito/info automáticamente (4s), las de error/warning se quedan
+    document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
+        if (alert.classList.contains('alert-success') || alert.classList.contains('alert-info')) {
+            setTimeout(function() {
+                var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+                if (bsAlert) bsAlert.close();
+            }, 4000);
+        }
+    });
 
     // Nota: el toggle dark/light se inicializa inline en footer.php
 });

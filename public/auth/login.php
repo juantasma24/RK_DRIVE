@@ -23,6 +23,10 @@
             </div>
             <?php endif; ?>
 
+            <div id="validationAlert" class="alert alert-danger d-none">
+                <ul class="mb-0" id="validationList"></ul>
+            </div>
+
             <form method="POST" action="<?= APP_URL ?>/login" id="loginForm" novalidate>
                 <?= csrfField() ?>
 
@@ -98,14 +102,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Form validation
-    const loginForm = document.getElementById('loginForm');
+    const loginForm      = document.getElementById('loginForm');
+    const validationAlert = document.getElementById('validationAlert');
+    const validationList  = document.getElementById('validationList');
+
+    function showValidationErrors(errors) {
+        validationList.innerHTML = errors.map(function(e) { return '<li>' + e + '</li>'; }).join('');
+        validationAlert.classList.remove('d-none');
+        validationAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideValidationErrors() {
+        validationAlert.classList.add('d-none');
+        validationList.innerHTML = '';
+    }
+
+    document.getElementById('email').addEventListener('input', hideValidationErrors);
+    document.getElementById('password').addEventListener('input', hideValidationErrors);
+
     if (loginForm) {
         loginForm.addEventListener('submit', function (e) {
             const email    = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            if (!email || !password) {
+            const errors   = [];
+
+            if (!email)    errors.push('El correo electronico es obligatorio.');
+            if (!password) errors.push('La contrasena es obligatoria.');
+
+            if (errors.length > 0) {
                 e.preventDefault();
-                alert('Por favor, completa todos los campos.');
+                showValidationErrors(errors);
             }
         });
     }

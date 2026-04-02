@@ -6,6 +6,17 @@
  */
 ?>
 
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="<?= APP_URL ?>/dashboard" style="color:var(--primary);">
+                <i class="bi bi-speedometer2 me-1"></i>Panel
+            </a>
+        </li>
+        <li class="breadcrumb-item active">Archivos por Cliente</li>
+    </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1"><i class="bi bi-people me-2 text-primary"></i>Archivos por Cliente</h2>
@@ -127,9 +138,6 @@
     </div>
 </div>
 
-<style>
-.active-sort-clientes { background:var(--color-primary,#5ea84a)!important;color:#0d0d0d!important;border-color:var(--color-primary,#5ea84a)!important; }
-</style>
 <script>
 (function () {
     var sortDir = 'asc';

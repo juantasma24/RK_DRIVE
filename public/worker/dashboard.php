@@ -18,9 +18,7 @@
         <p class="text-muted mb-0">
             Bienvenido, <strong style="color:var(--text-primary);"><?= sanitize($_SESSION['user_name'] ?? '') ?></strong>.
             <?php
-            $_dias   = ['Sunday'=>'Domingo','Monday'=>'Lunes','Tuesday'=>'Martes','Wednesday'=>'Miércoles','Thursday'=>'Jueves','Friday'=>'Viernes','Saturday'=>'Sábado'];
-            $_mesesD = ['January'=>'Enero','February'=>'Febrero','March'=>'Marzo','April'=>'Abril','May'=>'Mayo','June'=>'Junio','July'=>'Julio','August'=>'Agosto','September'=>'Septiembre','October'=>'Octubre','November'=>'Noviembre','December'=>'Diciembre'];
-            echo $_dias[date('l')] . ', ' . date('d') . ' de ' . $_mesesD[date('F')] . ' de ' . date('Y');
+            echo getDaySpanish(date('l')) . ', ' . date('d') . ' de ' . getMonthSpanish(date('F')) . ' de ' . date('Y');
             ?>
         </p>
     </div>

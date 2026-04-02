@@ -34,6 +34,11 @@
         })();
     </script>
 
+    <!-- Variables globales PHP → JS -->
+    <script>
+        window.APP_URL = '<?= APP_URL ?>';
+    </script>
+
     <!-- CSRF Token para AJAX -->
     <meta name="csrf-token" content="<?= generateCSRFToken() ?>">
 </head>
@@ -154,7 +159,12 @@
                             <i class="bi bi-bell"></i>
                             <?php
                             $unreadNotifications = 0;
-                            // TODO: Implementar contador real de notificaciones
+                            if (isAuthenticated()) {
+                                $unreadNotifications = (int)em()->getConnection()->executeQuery(
+                                    "SELECT COUNT(*) FROM notificaciones WHERE usuario_id = :uid AND leida = 0",
+                                    ['uid' => getCurrentUserId()]
+                                )->fetchOne();
+                            }
                             ?>
                             <?php if ($unreadNotifications > 0): ?>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"

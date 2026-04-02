@@ -13,9 +13,14 @@
             <?= count($usuarios) ?> usuario<?= count($usuarios) != 1 ? 's' : '' ?> registrados
         </p>
     </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
-        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
-    </button>
+    <div class="d-flex gap-2">
+        <a href="<?= APP_URL ?>/?page=admin/users&action=export" class="btn btn-outline-success">
+            <i class="bi bi-download me-2"></i>Exportar CSV
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
+            <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+        </button>
+    </div>
 </div>
 
 <?php if (empty($usuarios)): ?>
@@ -26,10 +31,45 @@
     </div>
 </div>
 <?php else: ?>
+
+<!-- Barra de controles -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted small me-1">
+                <i class="bi bi-people me-1"></i>
+                <span id="contadorUsuarios"><?= count($usuarios) ?></span>
+                usuario<?= count($usuarios) != 1 ? 's' : '' ?>
+            </span>
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Ordenar:</span>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-usuarios active-sort" data-dir="asc">
+                    <i class="bi bi-sort-alpha-down me-1"></i>A–Z
+                </button>
+                <button class="btn btn-sm btn-outline-secondary sort-btn-usuarios" data-dir="desc">
+                    <i class="bi bi-sort-alpha-up me-1"></i>Z–A
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-1 ms-2">
+                <span class="text-muted small">Rol:</span>
+                <button class="btn btn-sm btn-outline-secondary rol-btn active-rol" data-rol="">Todos</button>
+                <button class="btn btn-sm btn-outline-secondary rol-btn" data-rol="admin">Admin</button>
+                <button class="btn btn-sm btn-outline-secondary rol-btn" data-rol="trabajador">Trabajador</button>
+                <button class="btn btn-sm btn-outline-secondary rol-btn" data-rol="cliente">Cliente</button>
+            </div>
+            <div class="flex-grow-1"></div>
+            <div class="input-group input-group-sm" style="max-width:220px;">
+                <span class="input-group-text"><i class="bi bi-search" style="font-size:.8rem;"></i></span>
+                <input type="text" id="buscarUsuario" class="form-control" placeholder="Buscar usuario..." style="font-size:.83rem;">
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3">Usuario</th>
@@ -44,7 +84,9 @@
                 </thead>
                 <tbody>
                     <?php foreach ($usuarios as $u): ?>
-                    <tr>
+                    <tr data-nombre="<?= strtolower(sanitize($u['nombre'])) ?>"
+                        data-email="<?= strtolower(sanitize($u['email'])) ?>"
+                        data-rol="<?= sanitize($u['rol']) ?>">
                         <td class="ps-3">
                             <div class="fw-semibold" style="color:var(--text-primary);">
                                 <?= sanitize($u['nombre']) ?>
@@ -162,6 +204,67 @@
     </div>
 </div>
 <?php endif; ?>
+
+<script>
+(function () {
+    var sortDir    = 'asc';
+    var rolActivo  = '';
+
+    function filas() {
+        return Array.from(document.querySelectorAll('#tablaUsuarios tbody tr'));
+    }
+
+    function aplicarFiltros() {
+        var term = document.getElementById('buscarUsuario').value.toLowerCase();
+        var vis  = 0;
+        filas().forEach(function (f) {
+            var matchNombre = f.dataset.nombre.includes(term) || f.dataset.email.includes(term);
+            var matchRol    = rolActivo === '' || f.dataset.rol === rolActivo;
+            var visible     = matchNombre && matchRol;
+            f.style.display = visible ? '' : 'none';
+            if (visible) vis++;
+        });
+        document.getElementById('contadorUsuarios').textContent = (term || rolActivo) ? vis : <?= count($usuarios) ?>;
+    }
+
+    function ordenar() {
+        var tbody = document.querySelector('#tablaUsuarios tbody');
+        var sorted = filas().sort(function (a, b) {
+            var na = a.dataset.nombre, nb = b.dataset.nombre;
+            return sortDir === 'asc' ? na.localeCompare(nb) : nb.localeCompare(na);
+        });
+        sorted.forEach(function (f) { tbody.appendChild(f); });
+    }
+
+    document.querySelectorAll('.sort-btn-usuarios').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            sortDir = this.dataset.dir;
+            document.querySelectorAll('.sort-btn-usuarios').forEach(function (b) { b.classList.remove('active-sort'); });
+            this.classList.add('active-sort');
+            ordenar();
+        });
+    });
+
+    document.querySelectorAll('.rol-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            rolActivo = this.dataset.rol;
+            document.querySelectorAll('.rol-btn').forEach(function (b) { b.classList.remove('active-rol'); });
+            this.classList.add('active-rol');
+            aplicarFiltros();
+        });
+    });
+
+    document.getElementById('buscarUsuario').addEventListener('input', aplicarFiltros);
+})();
+</script>
+
+<style>
+.active-rol {
+    background: var(--primary) !important;
+    color: #0d0d0d !important;
+    border-color: var(--primary) !important;
+}
+</style>
 
 
 <!-- =====================================================================

@@ -49,7 +49,7 @@ define('APP_URL', 'http://localhost/RK_DRIVE');
 define('APP_NAME', 'RK Marketing Drive');
 
 // Version de la aplicacion
-define('APP_VERSION', '1.2.1');
+define('APP_VERSION', '1.3.0');
 
 //=============================================================================
 // CONFIGURACION DE SESION
@@ -70,9 +70,6 @@ define('SESSION_IDLE_TIMEOUT', 1800);
 
 // Directorio de uploads (fuera del document root idealmente)
 define('UPLOAD_DIR', APP_ROOT . '/uploads');
-
-// Directorio de papelera
-define('TRASH_DIR', APP_ROOT . '/trash');
 
 // Tamano maximo por archivo en bytes (500 MB)
 define('MAX_FILE_SIZE', 500 * 1024 * 1024);
@@ -131,21 +128,11 @@ define('MAX_FOLDERS_PER_CLIENT', 20);
 // CONFIGURACION DE SEGURIDAD
 //=============================================================================
 
-// Clave secreta para CSRF tokens
-define('CSRF_SECRET', 'rk_drive_csrf_secret_key_change_in_production');
-
 // Maximo intentos de login
 define('MAX_LOGIN_ATTEMPTS', 5);
 
 // Tiempo de bloqueo en segundos (15 minutos)
 define('LOGIN_LOCKOUT_TIME', 900);
-
-//=============================================================================
-// CONFIGURACION DE LIMPIEZA AUTOMATICA
-//=============================================================================
-
-// Dias de conservacion de archivos por defecto
-define('DEFAULT_CONSERVATION_DAYS', 30);
 
 //=============================================================================
 // CONFIGURACION DE LOGS
