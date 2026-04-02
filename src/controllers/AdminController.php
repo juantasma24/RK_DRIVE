@@ -523,8 +523,11 @@ class AdminController {
     // =========================================================================
 
     public function logs() {
-        $filtroAccion  = sanitizeString($_GET['accion'] ?? '');
-        $filtroUsuario = sanitizeString($_GET['usuario'] ?? '');
+        $filtroAccion  = sanitizeString($_GET['accion']      ?? '');
+        $filtroUsuario = sanitizeString($_GET['usuario']     ?? '');
+        $filtroDesde   = sanitizeString($_GET['fecha_desde'] ?? '');
+        $filtroHasta   = sanitizeString($_GET['fecha_hasta'] ?? '');
+        $export        = ($_GET['action'] ?? '') === 'export';
 
         $sql    = "SELECT l.id, l.accion, l.descripcion, l.entidad_tipo,
                           l.ip_address, l.fecha,
@@ -542,16 +545,57 @@ class AdminController {
             $sql .= " AND (u.nombre LIKE :usuario OR u.email LIKE :usuario)";
             $params['usuario'] = '%' . $filtroUsuario . '%';
         }
+        if (!empty($filtroDesde)) {
+            $sql .= " AND l.fecha >= :desde";
+            $params['desde'] = $filtroDesde . ' 00:00:00';
+        }
+        if (!empty($filtroHasta)) {
+            $sql .= " AND l.fecha <= :hasta";
+            $params['hasta'] = $filtroHasta . ' 23:59:59';
+        }
 
-        $sql .= " ORDER BY l.fecha DESC LIMIT 300";
+        $sql .= " ORDER BY l.fecha DESC";
+
+        if (!$export) {
+            $sql .= " LIMIT 300";
+        }
 
         $logs = em()->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
+
+        if ($export) {
+            $filename = 'logs_rk_drive_' . date('Y-m-d_H-i') . '.csv';
+            header('Content-Type: text/csv; charset=UTF-8');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-cache, no-store');
+
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
+            fputcsv($out, ['Fecha', 'Usuario', 'Email', 'Accion', 'Descripcion', 'Entidad', 'IP']);
+            foreach ($logs as $log) {
+                fputcsv($out, [
+                    $log['fecha'],
+                    $log['usuario_nombre'] ?? 'Sistema',
+                    $log['usuario_email']  ?? '',
+                    $log['accion'],
+                    $log['descripcion']    ?? '',
+                    $log['entidad_tipo']   ?? '',
+                    $log['ip_address']     ?? '',
+                ]);
+            }
+            fclose($out);
+
+            logActivity(getCurrentUserId(), 'logs_export',
+                'Admin exportó logs a CSV (' . count($logs) . ' registros)', 'sistema', null);
+            exit;
+        }
 
         return [
             'view'          => 'admin/logs',
             'logs'          => $logs,
             'filtroAccion'  => $filtroAccion,
             'filtroUsuario' => $filtroUsuario,
+            'filtroDesde'   => $filtroDesde,
+            'filtroHasta'   => $filtroHasta,
         ];
     }
 
