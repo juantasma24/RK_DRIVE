@@ -258,6 +258,19 @@ class ArchivoController {
         $carpeta   = $archivo->getCarpeta();
         $carpetaId = $carpeta ? $carpeta->getId() : null;
 
+        // Sincronizar almacenamiento_usado antes del flush para que el trigger
+        // de la BD nunca reste de un valor incorrecto (evita underflow BIGINT UNSIGNED)
+        em()->getConnection()->executeStatement(
+            "UPDATE usuarios
+             SET almacenamiento_usado = (
+                 SELECT COALESCE(SUM(tamano_bytes), 0)
+                 FROM archivos
+                 WHERE usuario_id = :uid AND en_papelera = 0
+             )
+             WHERE id = :uid",
+            ['uid' => $userId]
+        );
+
         $archivo->setEnPapelera(true);
         $archivo->setFechaEliminacion(new \DateTimeImmutable());
         $archivo->setFechaActualizacion(new \DateTimeImmutable());
