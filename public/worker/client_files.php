@@ -122,62 +122,6 @@ function previewTypeWorker(string $ext): string {
     </div>
 </div>
 
-<!-- Filtros -->
-<div class="card mb-4">
-    <div class="card-body py-3">
-        <form method="GET" action="<?= APP_URL ?>/" class="row g-2 align-items-end">
-            <input type="hidden" name="page"   value="worker/clients">
-            <input type="hidden" name="action" value="view">
-            <input type="hidden" name="id"     value="<?= $usuario->getId() ?>">
-
-            <div class="col-12 col-sm-6 col-md-3">
-                <label class="form-label small mb-1">Estado</label>
-                <select name="en_papelera" class="form-select form-select-sm">
-                    <option value=""  <?= $enPapeleraFiltro === ''  ? 'selected' : '' ?>>Todos</option>
-                    <option value="0" <?= $enPapeleraFiltro === '0' ? 'selected' : '' ?>>Solo activos</option>
-                    <option value="1" <?= $enPapeleraFiltro === '1' ? 'selected' : '' ?>>Solo papelera</option>
-                </select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-                <label class="form-label small mb-1">Carpeta</label>
-                <select name="carpeta_id" class="form-select form-select-sm">
-                    <option value="">Todas las carpetas</option>
-                    <?php foreach ($carpetas as $cap): ?>
-                    <option value="<?= $cap['id'] ?>"
-                        <?= isset($filters['carpeta_id']) && $filters['carpeta_id'] == $cap['id'] ? 'selected' : '' ?>>
-                        <?= sanitize($cap['nombre']) ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-2">
-                <label class="form-label small mb-1">Tipo</label>
-                <input type="text" name="extension" class="form-control form-control-sm"
-                       placeholder="pdf, jpg…"
-                       value="<?= sanitize($filters['extension'] ?? '') ?>">
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-3">
-                <label class="form-label small mb-1">Buscar nombre</label>
-                <input type="text" name="busqueda" class="form-control form-control-sm"
-                       placeholder="nombre del archivo…"
-                       value="<?= sanitize($filters['busqueda'] ?? '') ?>">
-            </div>
-
-            <div class="col-12 col-md-1 d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-sm flex-grow-1" title="Filtrar">
-                    <i class="bi bi-funnel"></i>
-                </button>
-                <a href="<?= $baseUrl ?>" class="btn btn-outline-secondary btn-sm" title="Limpiar">
-                    <i class="bi bi-x-lg"></i>
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- Tabla de archivos -->
 <?php if (empty($archivos)): ?>
 <div class="card">

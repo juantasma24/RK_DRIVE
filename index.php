@@ -101,7 +101,7 @@ if ($id !== null) {
 $publicRoutes = ['login', 'register', 'forgot-password', 'reset-password', 'logout'];
 $clientRoutes = ['dashboard', 'folders', 'files', 'trash', 'profile', 'notifications'];
 $adminRoutes  = ['admin', 'admin/users', 'admin/files', 'admin/logs', 'admin/settings', 'admin/clients'];
-$workerRoutes = ['worker/clients'];
+$workerRoutes = ['worker/clients', 'worker/dashboard'];
 
 //=============================================================================
 // VERIFICAR AUTENTICACION
@@ -274,6 +274,13 @@ switch ($page) {
         include __DIR__ . '/src/controllers/AdminController.php';
         $controller = new AdminController();
         $viewData = $controller->clients($action, $id);
+        break;
+
+    case 'worker/dashboard':
+        $pageTitle = 'Panel de Clientes';
+        include __DIR__ . '/src/controllers/TrabajadorController.php';
+        $controller = new TrabajadorController();
+        $viewData = $controller->dashboard();
         break;
 
     case 'worker/clients':

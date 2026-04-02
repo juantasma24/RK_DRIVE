@@ -60,8 +60,13 @@
                 <!-- Main navigation -->
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link <?= ($page ?? '') === 'dashboard' ? 'active' : '' ?>"
-                           href="<?= APP_URL ?>/dashboard">
+                        <?php
+                        $panelHref   = isWorker() ? (APP_URL . '/?page=worker/dashboard') : (APP_URL . '/dashboard');
+                        $panelActive = isWorker()
+                            ? (($page ?? '') === 'worker/dashboard' ? 'active' : '')
+                            : (($page ?? '') === 'dashboard' ? 'active' : '');
+                        ?>
+                        <a class="nav-link <?= $panelActive ?>" href="<?= $panelHref ?>">
                             <i class="bi bi-speedometer2"></i> Panel
                         </a>
                     </li>

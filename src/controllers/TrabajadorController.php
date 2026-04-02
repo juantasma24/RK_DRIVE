@@ -16,6 +16,43 @@ class TrabajadorController {
         requireAuth('trabajador');
     }
 
+    public function dashboard() {
+        $db = em()->getConnection();
+
+        $totalClientes = (int)$db->executeQuery(
+            "SELECT COUNT(*) FROM usuarios WHERE rol = 'cliente' AND activo = 1"
+        )->fetchOne();
+
+        $totalArchivos = (int)$db->executeQuery(
+            "SELECT COUNT(*) FROM archivos a
+             JOIN usuarios u ON a.usuario_id = u.id
+             WHERE u.rol = 'cliente' AND a.en_papelera = 0"
+        )->fetchOne();
+
+        $totalPapelera = (int)$db->executeQuery(
+            "SELECT COUNT(*) FROM archivos a
+             JOIN usuarios u ON a.usuario_id = u.id
+             WHERE u.rol = 'cliente' AND a.en_papelera = 1"
+        )->fetchOne();
+
+        $actividad = $db->executeQuery(
+            "SELECT l.accion, l.descripcion, l.fecha, u.nombre AS usuario_nombre
+             FROM logs_actividad l
+             JOIN usuarios u ON l.usuario_id = u.id
+             WHERE u.rol = 'cliente'
+             ORDER BY l.fecha DESC
+             LIMIT 10"
+        )->fetchAllAssociative();
+
+        return [
+            'view'          => 'worker/dashboard',
+            'totalClientes' => $totalClientes,
+            'totalArchivos' => $totalArchivos,
+            'totalPapelera' => $totalPapelera,
+            'actividad'     => $actividad,
+        ];
+    }
+
     public function clients($action, $id) {
         switch ($action) {
             case 'view':     return $this->viewClientFiles((int)$id);
@@ -45,10 +82,10 @@ class TrabajadorController {
         )->fetchAllAssociative();
 
         return [
-            'view'         => 'worker/clients',
-            'clientes'     => $clientes,
-            'puedeEditar'  => canEditFiles(),
-            'puedeEliminar'=> canDeleteFiles(),
+            'view'          => 'worker/clients',
+            'clientes'      => $clientes,
+            'puedeEditar'   => canEditFiles(),
+            'puedeEliminar' => canDeleteFiles(),
         ];
     }
 
