@@ -118,9 +118,6 @@
     </div>
 </div>
 
-<style>
-.active-sort-clientes { background:var(--color-primary,#5ea84a)!important;color:#0d0d0d!important;border-color:var(--color-primary,#5ea84a)!important; }
-</style>
 <script>
 (function () {
     var sortDir = 'asc';

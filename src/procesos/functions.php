@@ -673,3 +673,44 @@ function ddd(...$vars) {
     echo '</pre>';
     exit;
 }
+
+//=============================================================================
+// FUNCIONES DE INTERNACIONALIZACION
+//=============================================================================
+
+/**
+ * Devuelve el nombre del mes en español
+ */
+function getMonthSpanish(string $monthEnglish): string {
+    $meses = [
+        'January'=>'Enero','February'=>'Febrero','March'=>'Marzo',
+        'April'=>'Abril','May'=>'Mayo','June'=>'Junio',
+        'July'=>'Julio','August'=>'Agosto','September'=>'Septiembre',
+        'October'=>'Octubre','November'=>'Noviembre','December'=>'Diciembre',
+    ];
+    return $meses[$monthEnglish] ?? $monthEnglish;
+}
+
+/**
+ * Devuelve el nombre del día de la semana en español
+ */
+function getDaySpanish(string $dayEnglish): string {
+    $dias = [
+        'Monday'=>'Lunes','Tuesday'=>'Martes','Wednesday'=>'Miércoles',
+        'Thursday'=>'Jueves','Friday'=>'Viernes','Saturday'=>'Sábado','Sunday'=>'Domingo',
+    ];
+    return $dias[$dayEnglish] ?? $dayEnglish;
+}
+
+/**
+ * Devuelve el tipo de previsualización según extensión de archivo
+ */
+function getPreviewType(string $ext): string {
+    $ext = strtolower($ext);
+    if (in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'])) return 'image';
+    if (in_array($ext, ['mp4','webm']))                          return 'video';
+    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))         return 'audio';
+    if ($ext === 'pdf')                                          return 'pdf';
+    if (in_array($ext, ['txt','csv']))                           return 'text';
+    return 'none';
+}

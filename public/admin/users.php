@@ -13,9 +13,14 @@
             <?= count($usuarios) ?> usuario<?= count($usuarios) != 1 ? 's' : '' ?> registrados
         </p>
     </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
-        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
-    </button>
+    <div class="d-flex gap-2">
+        <a href="<?= APP_URL ?>/?page=admin/users&action=export" class="btn btn-outline-success">
+            <i class="bi bi-download me-2"></i>Exportar CSV
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrear">
+            <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+        </button>
+    </div>
 </div>
 
 <?php if (empty($usuarios)): ?>

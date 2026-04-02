@@ -153,6 +153,7 @@ if ($isLoggedIn) {
 $viewData = [];
 
 // Determinar que controlador cargar
+try {
 switch ($page) {
     // Rutas publicas
     case 'login':
@@ -298,6 +299,15 @@ switch ($page) {
             'view' => 'errors/404',
             'title' => 'Pagina no encontrada'
         ];
+}
+} catch (\Throwable $e) {
+    if (APP_ENV === 'development') {
+        throw $e;
+    }
+    logMessage('error', 'Error 500: ' . $e->getMessage(), ['file' => $e->getFile(), 'line' => $e->getLine()]);
+    http_response_code(500);
+    $pageTitle = 'Error del Servidor';
+    $viewData = ['view' => 'errors/500'];
 }
 
 //=============================================================================

@@ -27,8 +27,44 @@ class AdminController {
             case 'delete':           return $this->deleteUser((int)$id);
             case 'toggleEditPerm':   return $this->togglePermission((int)$id, 'editar');
             case 'toggleDeletePerm': return $this->togglePermission((int)$id, 'eliminar');
+            case 'export':           return $this->exportUsers();
             default:                 return $this->listUsers();
         }
+    }
+
+    private function exportUsers() {
+        requireAuth('admin');
+
+        $usuarios = em()->getConnection()->executeQuery(
+            "SELECT nombre, email, rol, activo, almacenamiento_usado, almacenamiento_maximo,
+                    ultimo_acceso, fecha_creacion
+             FROM usuarios ORDER BY rol, nombre"
+        )->fetchAllAssociative();
+
+        $filename = 'usuarios_rk_drive_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, no-store');
+
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 para Excel
+        fputcsv($out, ['Nombre', 'Email', 'Rol', 'Activo', 'Almacenamiento Usado', 'Almacenamiento Maximo', 'Ultimo Acceso', 'Fecha Creacion']);
+        foreach ($usuarios as $u) {
+            fputcsv($out, [
+                $u['nombre'],
+                $u['email'],
+                $u['rol'],
+                $u['activo'] ? 'Si' : 'No',
+                formatFileSize((int)$u['almacenamiento_usado']),
+                formatFileSize((int)$u['almacenamiento_maximo']),
+                $u['ultimo_acceso'] ?? 'Nunca',
+                $u['fecha_creacion'],
+            ]);
+        }
+        fclose($out);
+
+        logActivity(getCurrentUserId(), 'users_export', 'Admin exporto lista de usuarios a CSV', 'sistema', null);
+        exit;
     }
 
     private function listUsers() {
@@ -529,40 +565,35 @@ class AdminController {
         $filtroHasta   = sanitizeString($_GET['fecha_hasta'] ?? '');
         $export        = ($_GET['action'] ?? '') === 'export';
 
-        $sql    = "SELECT l.id, l.accion, l.descripcion, l.entidad_tipo,
-                          l.ip_address, l.fecha,
-                          u.nombre AS usuario_nombre, u.email AS usuario_email
-                   FROM logs_actividad l
+        $whereSql = " FROM logs_actividad l
                    LEFT JOIN usuarios u ON l.usuario_id = u.id
                    WHERE 1=1";
         $params = [];
 
         if (!empty($filtroAccion)) {
-            $sql .= " AND l.accion LIKE :accion";
+            $whereSql .= " AND l.accion LIKE :accion";
             $params['accion'] = '%' . $filtroAccion . '%';
         }
         if (!empty($filtroUsuario)) {
-            $sql .= " AND (u.nombre LIKE :usuario OR u.email LIKE :usuario)";
+            $whereSql .= " AND (u.nombre LIKE :usuario OR u.email LIKE :usuario)";
             $params['usuario'] = '%' . $filtroUsuario . '%';
         }
         if (!empty($filtroDesde)) {
-            $sql .= " AND l.fecha >= :desde";
+            $whereSql .= " AND l.fecha >= :desde";
             $params['desde'] = $filtroDesde . ' 00:00:00';
         }
         if (!empty($filtroHasta)) {
-            $sql .= " AND l.fecha <= :hasta";
+            $whereSql .= " AND l.fecha <= :hasta";
             $params['hasta'] = $filtroHasta . ' 23:59:59';
         }
 
-        $sql .= " ORDER BY l.fecha DESC";
-
-        if (!$export) {
-            $sql .= " LIMIT 300";
-        }
-
-        $logs = em()->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
-
         if ($export) {
+            $sql  = "SELECT l.id, l.accion, l.descripcion, l.entidad_tipo,
+                            l.ip_address, l.fecha,
+                            u.nombre AS usuario_nombre, u.email AS usuario_email"
+                  . $whereSql . " ORDER BY l.fecha DESC";
+            $logs = em()->getConnection()->executeQuery($sql, $params)->fetchAllAssociative();
+
             $filename = 'logs_rk_drive_' . date('Y-m-d_H-i') . '.csv';
             header('Content-Type: text/csv; charset=UTF-8');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -589,13 +620,42 @@ class AdminController {
             exit;
         }
 
+        // Paginación
+        $perPage  = 50;
+        $page     = max(1, (int)($_GET['p'] ?? 1));
+        $offset   = ($page - 1) * $perPage;
+
+        $totalRegistros = (int)em()->getConnection()->executeQuery(
+            "SELECT COUNT(*)" . $whereSql, $params
+        )->fetchOne();
+
+        $totalPaginas = max(1, (int)ceil($totalRegistros / $perPage));
+        $page         = min($page, $totalPaginas);
+        $offset       = ($page - 1) * $perPage;
+
+        $sql  = "SELECT l.id, l.accion, l.descripcion, l.entidad_tipo,
+                        l.ip_address, l.fecha,
+                        u.nombre AS usuario_nombre, u.email AS usuario_email"
+              . $whereSql
+              . " ORDER BY l.fecha DESC"
+              . " LIMIT :limit OFFSET :offset";
+
+        $paramsPage           = $params;
+        $paramsPage['limit']  = $perPage;
+        $paramsPage['offset'] = $offset;
+
+        $logs = em()->getConnection()->executeQuery($sql, $paramsPage)->fetchAllAssociative();
+
         return [
-            'view'          => 'admin/logs',
-            'logs'          => $logs,
-            'filtroAccion'  => $filtroAccion,
-            'filtroUsuario' => $filtroUsuario,
-            'filtroDesde'   => $filtroDesde,
-            'filtroHasta'   => $filtroHasta,
+            'view'            => 'admin/logs',
+            'logs'            => $logs,
+            'filtroAccion'    => $filtroAccion,
+            'filtroUsuario'   => $filtroUsuario,
+            'filtroDesde'     => $filtroDesde,
+            'filtroHasta'     => $filtroHasta,
+            'paginaActual'    => $page,
+            'totalPaginas'    => $totalPaginas,
+            'totalRegistros'  => $totalRegistros,
         ];
     }
 

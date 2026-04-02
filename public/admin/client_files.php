@@ -10,15 +10,6 @@
  */
 $totalArchivos = count($archivos);
 
-function previewTypeAdmin(string $ext): string {
-    $ext = strtolower($ext);
-    if (in_array($ext, ['jpg','jpeg','png','gif','webp','svg','bmp'])) return 'image';
-    if (in_array($ext, ['mp4','webm']))                                return 'video';
-    if (in_array($ext, ['mp3','wav','ogg','aac','m4a']))               return 'audio';
-    if ($ext === 'pdf')                                                return 'pdf';
-    if (in_array($ext, ['txt','csv']))                                 return 'text';
-    return 'none';
-}
 $activos       = array_filter($archivos, fn($a) => !$a['en_papelera']);
 $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
 $totalBytes    = array_sum(array_column($archivos, 'tamano_bytes'));
@@ -187,7 +178,7 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
                 </thead>
                 <tbody>
                     <?php foreach ($archivos as $a):
-                        $ptAdmin = previewTypeAdmin($a['extension']);
+                        $ptAdmin = getPreviewType($a['extension']);
                     ?>
                     <tr data-nombre="<?= strtolower(sanitize($a['nombre_original'])) ?>"
                         data-tipo="<?= strtolower(sanitize($a['extension'])) ?>"
@@ -270,7 +261,7 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
 <div id="vistaGridAdmin" class="d-none">
     <div class="row g-3" id="gridArchivosAdmin">
         <?php foreach ($archivos as $a):
-            $ptG   = previewTypeAdmin($a['extension']);
+            $ptG   = getPreviewType($a['extension']);
             $esImg = ($ptG === 'image');
             $prevB = APP_URL . '/?page=files&action=preview&id=';
         ?>
@@ -426,7 +417,6 @@ $baseUrl = APP_URL . '/?page=admin/clients&action=view&id=' . $usuario->getId();
 
 
 <style>
-.active-sort { background:var(--color-primary,#5ea84a)!important;color:#0d0d0d!important;border-color:var(--color-primary,#5ea84a)!important; }
 .file-card   { transition:transform .18s ease,box-shadow .18s ease; }
 .file-card:hover { transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.35); }
 </style>

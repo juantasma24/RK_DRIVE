@@ -10,6 +10,17 @@ $activos       = array_filter($archivos, fn($a) => !$a['en_papelera']);
 $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
 ?>
 
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="<?= APP_URL ?>/dashboard" style="color:var(--primary);">
+                <i class="bi bi-speedometer2 me-1"></i>Panel
+            </a>
+        </li>
+        <li class="breadcrumb-item active">Gestión de Archivos</li>
+    </ol>
+</nav>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1"><i class="bi bi-files me-2 text-primary"></i>Gestion de Archivos</h2>
@@ -124,7 +135,7 @@ $enPapelera    = array_filter($archivos, fn($a) =>  $a['en_papelera']);
                         <td class="small text-muted"><?= formatDate($a['fecha_subida'], 'd/m/Y H:i') ?></td>
                         <td class="text-end pe-3">
                             <button class="btn btn-sm btn-outline-danger"
-                                    onclick="confirmarEliminar(<?= $a['id'] ?>, '<?= addslashes(sanitize($a['nombre_original'])) ?>')"
+                                    onclick="confirmarEliminar(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nombre_original']), ENT_QUOTES, 'UTF-8') ?>)"
                                     title="Eliminar permanentemente">
                                 <i class="bi bi-trash"></i>
                             </button>
